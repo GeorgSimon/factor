@@ -4,5 +4,5 @@ USING: accessors ui ui.gadgets.labels ;
 IN: outline-manager
 
 MAIN-WINDOW: outline-manager { { title "Outline Manager" } }
-    "Hello world" <label> >>gadgets
+    "Hello world" <label> { 99 99 } >>pref-dim >>gadgets
     ;
