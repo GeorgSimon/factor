@@ -10,7 +10,14 @@ M: short-line row-columns ( line object -- line )
     ;
 MAIN-WINDOW: outline-manager
     { { title "Outline Manager" } }
+
+    "Überschrift" <label>
+    { 333 55 } >>pref-dim
+
     { { "Hello world" } { "Hello world" } { "Hello world" } } <model>
-    short-line <table>
-    >>gadgets
+    short-line
+    <table>
+    { 333 666 } >>pref-dim
+
+    2array >>gadgets
     ;
