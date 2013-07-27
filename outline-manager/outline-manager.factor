@@ -2,14 +2,16 @@
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays colors.constants continuations fry
     io io.files io.encodings.utf8 kernel math.rectangles models
-    sequences
+    namespaces sequences
     ui ui.gadgets.glass ui.gadgets ui.gadgets.editors
     ui.gadgets.labeled ui.gadgets.tables ui.gestures ui.pens.solid
     ;
+FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 
 USE: prettyprint ! todo for debugging only
 
+SYMBOL: outline-model
 ! ---------
 ! utilities
 ! ---------
@@ -33,7 +35,9 @@ TUPLE: item-editor < editor
     ;
 GENERIC: make-item ( editor -- )
 M: item-editor make-item
-    hide-glass
+    [ control-value outline-model get [ swap prefix ] change-model ]
+    [ hide-glass ]
+    bi
     ;
 item-editor
 H{
@@ -79,8 +83,9 @@ set-gestures
     [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
     [ error>message " : " append write print flush { } ]
     recover
-    '[
-        _ <model> short-line <outline-table>
+    <model> outline-model set
+    [
+        outline-model get short-line <outline-table>
         "Outline Manager"
         open-window
         ]
