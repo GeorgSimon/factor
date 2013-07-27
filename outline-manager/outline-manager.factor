@@ -1,27 +1,41 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays kernel models ui ui.gadgets.labels ui.gadgets.tables ;
+USING: accessors arrays continuations
+    io io.files io.encodings.utf8 kernel models namespaces
+    sequences ui ui.gadgets.tables ;
 IN: outline-manager
 
-SINGLETON: short-line ! renderer
+USE: prettyprint ! todo for debugging only
 
-M: short-line row-columns ( line object -- line )
-    drop
+SYMBOLS: outline-data
+    ;
+: error>message ( error -- string )
+    ! Factor errors are strings in Windows and tuples in Linux
+    [ message>> ] [ drop ] recover
     ;
 : default-font ( gadget -- gadget ) 16 over font>> size<<
+    ;
+SINGLETON: short-line ! renderer
+M: short-line row-columns ( line object -- line )
+    drop
     ;
 : <outline-table> ( model renderer -- table )
     <table>
     { 333 666 } >>pref-dim
     default-font
     ;
-MAIN-WINDOW: outline-manager
+: outline-manager ( -- )
 
-    { { title "Outline Manager" } }
-
-    { { "Hello world" } { "Hello world" } { "Hello world" } } <model>
-    short-line
-    <outline-table>
-
-    >>gadgets
+    "outline.txt"
+    [ utf8 file-lines [ 1array ] map ]
+    [ error>message " : " append write print flush { } ]
+    recover
+    outline-data set
+    [
+        outline-data get <model> short-line <outline-table>
+        "Outline Manager"
+        open-window
+        ]
+    with-ui
     ;
+MAIN: outline-manager
