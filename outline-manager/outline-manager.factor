@@ -26,18 +26,27 @@ SINGLETON: short-line ! renderer
 M: short-line row-columns ( line object -- line )
     drop
     ;
-! -------------------
-! outline-table class
-! -------------------
+! -----------
+! item-editor
+! -----------
+TUPLE: item-editor < editor
+    ;
+: <item-editor> ( -- editor )
+    editor new-editor
+    default-font
+    COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
+    "new item line" <labeled-gadget>
+    ;
+! -------------
+! outline-table
+! -------------
 TUPLE: outline-table < table popup
     ;
 : finish-outline ( table -- )
     close-window
     ;
 : jot ( table -- )
-    <editor> default-font
-    COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    "new item line" <labeled-gadget>
+    <item-editor>
     { 0 0 } { 0 0 } <rect> '[ _ show-popup ]
     [ request-focus ]
     bi
@@ -48,14 +57,14 @@ H{
     { T{ key-down { sym " " } }     [ jot ] }
     }
 set-gestures
-! ----
-! main
-! ----
 : <outline-table> ( model renderer -- table )
     outline-table new-table
     { 333 666 } >>pref-dim
     default-font
     ;
+! ----
+! main
+! ----
 : outline-manager ( -- )
     "outline.txt"
     [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
