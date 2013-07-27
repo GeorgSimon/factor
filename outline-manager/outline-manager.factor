@@ -55,13 +55,16 @@ set-gestures
 ! -------------
 TUPLE: outline-table < table popup
     ;
-: init-selection ( table -- )
+GENERIC: init-selection ( table -- )
+M: outline-table init-selection
     selection-index>> [ [ ] [ 0 ] if* ] change-model
     ;
-: finish-outline ( table -- )
+GENERIC: finish-outline ( table -- )
+M: outline-table finish-outline
     close-window
     ;
-: jot ( table -- )
+GENERIC: jot ( table -- )
+M: outline-table jot
     <item-editor>
     { 0 0 } { 0 0 } <rect> '[ _ show-popup ]
     [ request-focus ]
