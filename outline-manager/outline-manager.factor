@@ -9,15 +9,13 @@ M: short-line row-columns ( line object -- line )
     drop
     ;
 MAIN-WINDOW: outline-manager
-    { { title "Outline Manager" } }
 
-    "Überschrift" <label>
-    { 333 55 } >>pref-dim
+    { { title "Outline Manager" } }
 
     { { "Hello world" } { "Hello world" } { "Hello world" } } <model>
     short-line
     <table>
     { 333 666 } >>pref-dim
 
-    2array >>gadgets
+    >>gadgets
     ;
