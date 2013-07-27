@@ -4,7 +4,7 @@ USING: accessors arrays colors.constants continuations fry
     io io.files io.encodings.utf8 kernel math math.rectangles models
     namespaces sequences
     ui ui.gadgets.glass ui.gadgets ui.gadgets.editors ui.gadgets.labeled
-    ui.gadgets.line-support ui.gadgets.tables ui.gadgets.tables.private
+    ui.gadgets.line-support ui.gadgets.tables
     ui.gestures ui.pens.solid
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -82,13 +82,13 @@ M: outline-table jot
     ;
 outline-table
 H{
-    { gain-focus                    [ 0 prev/next-row ] }
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ jot ] }
     }
 set-gestures
 : <outline-table> ( model renderer -- table )
     outline-table new-table
+    t >>selection-required? ! better behaviour before first cursor move
     { 333 666 } >>pref-dim
     default-font
     ;
