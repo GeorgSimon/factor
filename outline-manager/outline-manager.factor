@@ -1,10 +1,11 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays colors.constants continuations fry
-    io io.files io.encodings.utf8 kernel math.rectangles models
+    io io.files io.encodings.utf8 kernel math math.rectangles models
     namespaces sequences
     ui ui.gadgets.glass ui.gadgets ui.gadgets.editors
-    ui.gadgets.labeled ui.gadgets.tables ui.gestures ui.pens.solid
+    ui.gadgets.labeled ui.gadgets.line-support ui.gadgets.tables
+    ui.gestures ui.pens.solid
     ;
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
@@ -63,10 +64,17 @@ GENERIC: finish-outline ( table -- )
 M: outline-table finish-outline
     close-window
     ;
+GENERIC: selection-rect ( table -- rectangle )
+M: outline-table selection-rect
+    [ line-height dup ] [ selection-index>> value>> ] bi
+    * 0 swap 2array
+    99 rot 2 + 2array
+    <rect>
+    ;
 GENERIC: jot ( table -- )
 M: outline-table jot
     <item-editor>
-    { 0 0 } { 0 0 } <rect> '[ _ show-popup ]
+    over selection-rect '[ _ show-popup ]
     [ request-focus ]
     bi
     ;
