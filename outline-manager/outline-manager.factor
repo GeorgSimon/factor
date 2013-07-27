@@ -1,14 +1,12 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays continuations
-    io io.files io.encodings.utf8 kernel models namespaces
+USING: accessors arrays continuations fry
+    io io.files io.encodings.utf8 kernel models
     sequences ui ui.gadgets.tables ;
 IN: outline-manager
 
 USE: prettyprint ! todo for debugging only
 
-SYMBOLS: outline-data
-    ;
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
@@ -30,9 +28,8 @@ M: short-line row-columns ( line object -- line )
     [ utf8 file-lines [ 1array ] map ]
     [ error>message " : " append write print flush { } ]
     recover
-    outline-data set
-    [
-        outline-data get <model> short-line <outline-table>
+    '[
+        _ <model> short-line <outline-table>
         "Outline Manager"
         open-window
         ]
