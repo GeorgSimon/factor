@@ -10,15 +10,18 @@ M: short-line row-columns ( line object -- line )
     ;
 : default-font ( gadget -- gadget ) 16 over font>> size<<
     ;
+: <outline-table> ( model renderer -- table )
+    <table>
+    { 333 666 } >>pref-dim
+    default-font
+    ;
 MAIN-WINDOW: outline-manager
 
     { { title "Outline Manager" } }
 
     { { "Hello world" } { "Hello world" } { "Hello world" } } <model>
     short-line
-    <table>
-    { 333 666 } >>pref-dim
-    default-font
+    <outline-table>
 
     >>gadgets
     ;
