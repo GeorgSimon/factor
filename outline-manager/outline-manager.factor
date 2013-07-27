@@ -3,8 +3,8 @@
 USING: accessors arrays colors.constants continuations fry
     io io.files io.encodings.utf8 kernel math math.rectangles models
     namespaces sequences
-    ui ui.gadgets.glass ui.gadgets ui.gadgets.editors
-    ui.gadgets.labeled ui.gadgets.line-support ui.gadgets.tables
+    ui ui.gadgets.glass ui.gadgets ui.gadgets.editors ui.gadgets.labeled
+    ui.gadgets.line-support ui.gadgets.tables ui.gadgets.tables.private
     ui.gestures ui.pens.solid
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -58,7 +58,9 @@ TUPLE: outline-table < table popup
     ;
 GENERIC: init-selection ( table -- )
 M: outline-table init-selection
+    dup dup
     selection-index>> [ [ ] [ 0 ] if* ] change-model
+    selection-index>> value>> select-row
     ;
 GENERIC: finish-outline ( table -- )
 M: outline-table finish-outline
@@ -80,7 +82,7 @@ M: outline-table jot
     ;
 outline-table
 H{
-    { gain-focus                    [ init-selection ] }
+    { gain-focus                    [ 0 prev/next-row ] }
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ jot ] }
     }
