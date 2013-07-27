@@ -23,9 +23,8 @@ M: short-line row-columns ( line object -- line )
     default-font
     ;
 : outline-manager ( -- )
-
     "outline.txt"
-    [ utf8 file-lines [ 1array ] map ]
+    [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
     [ error>message " : " append write print flush { } ]
     recover
     '[
