@@ -31,8 +31,17 @@ M: short-line row-columns ( line object -- line )
 ! -----------
 TUPLE: item-editor < editor
     ;
+GENERIC: make-item ( editor -- )
+M: item-editor make-item
+    hide-glass
+    ;
+item-editor
+H{
+    { T{ key-down { sym "RET" } }   [ make-item ] }
+    }
+set-gestures
 : <item-editor> ( -- editor )
-    editor new-editor
+    item-editor new-editor
     default-font
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "new item line" <labeled-gadget>
