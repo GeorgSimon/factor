@@ -68,9 +68,9 @@ M: outline-table finish-outline
     ;
 GENERIC: selection-rect ( table -- rectangle )
 M: outline-table selection-rect
-    [ line-height dup ] [ selection-index>> value>> ] bi
-    * 0 swap 2array
-    99 rot 2 + 2array
+    [ total-width>> ] [ line-height dup ] [ selection-index>> value>> ] tri
+    * 0 swap 2array -rot
+    2 + 2array
     <rect>
     ;
 GENERIC: jot ( table -- )
