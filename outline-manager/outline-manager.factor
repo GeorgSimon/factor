@@ -55,6 +55,9 @@ set-gestures
 ! -------------
 TUPLE: outline-table < table popup
     ;
+: init-selection ( table -- )
+    selection-index>> [ [ ] [ 0 ] if* ] change-model
+    ;
 : finish-outline ( table -- )
     close-window
     ;
@@ -66,6 +69,7 @@ TUPLE: outline-table < table popup
     ;
 outline-table
 H{
+    { gain-focus                    [ init-selection ] }
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ jot ] }
     }
