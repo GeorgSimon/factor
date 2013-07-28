@@ -13,8 +13,8 @@ IN: outline-manager
 
 USE: prettyprint ! todo for development and debugging only
 
-SYMBOL: current-file
-SYMBOL: outline-model ! for M: item-editor prefix-item
+SYMBOLS: current-file outline-model
+    ;
 ! ----------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
@@ -58,8 +58,12 @@ M: outline-table init-selection
     selection-index>> value>> select-row
     ;
 GENERIC: finish-outline ( table -- )
+: save-data ( -- )
+    outline-model get value>> [ first ] map
+    current-file get utf8 set-file-lines
+    ;
 M: outline-table finish-outline
-    close-window
+    save-data close-window
     ;
 GENERIC: outline-index ( table -- index )
 M: outline-table outline-index
