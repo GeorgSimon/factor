@@ -48,20 +48,15 @@ set-gestures
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "new item line" <labeled-gadget-with-default-font>
     ;
-! ----------------------------------------------- outline-table
-TUPLE: outline-table < table popup
-    ;
-GENERIC: init-selection ( table -- )
-M: outline-table init-selection
-    dup dup
-    selection-index>> [ [ ] [ 0 ] if* ] change-model
-    selection-index>> value>> select-row
-    ;
-GENERIC: finish-outline ( table -- )
+! ----------------------------------------------- data management
 : save-data ( -- )
     outline-model get value>> [ first ] map
     current-file get utf8 set-file-lines
     ;
+! ----------------------------------------------- outline-table
+TUPLE: outline-table < table popup
+    ;
+GENERIC: finish-outline ( table -- )
 M: outline-table finish-outline
     save-data close-window
     ;
@@ -87,6 +82,7 @@ outline-table
 H{
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ jot ] }
+!    { T{ key-down { sym "a" } }     [ archive ] }
     }
 set-gestures
 : <outline-table> ( -- table )
