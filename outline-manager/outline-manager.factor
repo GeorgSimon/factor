@@ -1,8 +1,8 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays colors.constants continuations fry
-    io io.files io.encodings.utf8 kernel math math.rectangles models
-    namespaces sequences
+    io io.backend io.files io.encodings.utf8
+    kernel math math.rectangles models namespaces sequences
     ui ui.gadgets.glass ui.gadgets ui.gadgets.editors ui.gadgets.labeled
     ui.gadgets.line-support ui.gadgets.tables
     ui.gestures ui.pens.solid
@@ -12,7 +12,8 @@ IN: outline-manager
 
 USE: prettyprint ! todo for debugging only
 
-SYMBOL: outline-model
+SYMBOL: current-file
+SYMBOL: outline-model ! for M: item-editor prefix-item
 ! ----------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
@@ -80,18 +81,21 @@ set-gestures
 : <outline-table> ( -- table )
     outline-model get trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
-    { 333 666 } >>pref-dim
     default-font
+    current-file get normalize-path <labeled-gadget>
+    { 333 666 } >>pref-dim
     ;
 ! ----------------------------------------------- main
-: init-outline-model ( filename -- )
+: init-outline-model ( -- )
+    current-file get
     [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
     [ error>message " : " append write print flush { } ]
     recover
     <model> outline-model set
     ;
 : outline-manager ( -- )
-    "outline.txt" init-outline-model
+    "outline.txt" current-file set
+    init-outline-model
     [ <outline-table> "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
