@@ -77,24 +77,21 @@ H{
     { T{ key-down { sym " " } }     [ jot ] }
     }
 set-gestures
-: <outline-table> ( model -- table )
-    trivial-renderer outline-table new-table
+: <outline-table> ( -- table )
+    outline-model get trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
     { 333 666 } >>pref-dim
     default-font
     ;
 ! ----------------------------------------------- main
-: outline-manager ( -- )
-    "outline.txt"
+: init-outline-model ( filename -- )
     [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
     [ error>message " : " append write print flush { } ]
     recover
     <model> outline-model set
-    [
-        outline-model get <outline-table>
-        "Outline Manager"
-        open-window
-        ]
-    with-ui
+    ;
+: outline-manager ( -- )
+    "outline.txt" [ init-outline-model ] [ init-outline-model ] bi
+    [ <outline-table> "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
