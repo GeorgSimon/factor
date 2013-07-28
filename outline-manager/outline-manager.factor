@@ -22,13 +22,6 @@ SYMBOL: outline-model
     ;
 : default-font ( gadget -- gadget ) 16 over font>> size<<
     ;
-! --------
-! renderer
-! --------
-SINGLETON: short-line ! renderer
-M: short-line row-columns ( line object -- line )
-    drop
-    ;
 ! -----------
 ! item-editor
 ! -----------
@@ -86,8 +79,8 @@ H{
     { T{ key-down { sym " " } }     [ jot ] }
     }
 set-gestures
-: <outline-table> ( model renderer -- table )
-    outline-table new-table
+: <outline-table> ( model -- table )
+    trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
     { 333 666 } >>pref-dim
     default-font
@@ -102,7 +95,7 @@ set-gestures
     recover
     <model> outline-model set
     [
-        outline-model get short-line <outline-table>
+        outline-model get <outline-table>
         "Outline Manager"
         open-window
         ]
