@@ -10,7 +10,7 @@ USING: accessors arrays colors.constants continuations fry
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 
-USE: prettyprint ! todo for debugging only
+USE: prettyprint ! todo for development and debugging only
 
 SYMBOL: current-file
 SYMBOL: outline-model ! for M: item-editor prefix-item
@@ -83,6 +83,7 @@ set-gestures
     t >>selection-required? ! better behaviour before first cursor move
     default-font
     current-file get normalize-path <labeled-gadget>
+    16 over children>> second children>> first font>> size<<
     { 333 666 } >>pref-dim
     ;
 ! ----------------------------------------------- main
