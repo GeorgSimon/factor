@@ -91,7 +91,7 @@ set-gestures
     <model> outline-model set
     ;
 : outline-manager ( -- )
-    "outline.txt" [ init-outline-model ] [ init-outline-model ] bi
+    "outline.txt" init-outline-model
     [ <outline-table> "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
