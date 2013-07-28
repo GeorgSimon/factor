@@ -31,8 +31,7 @@ SYMBOLS: current-file outline-model
 ! ----------------------------------------------- item-editor
 TUPLE: item-editor < editor
     ;
-GENERIC: prefix-item ( editor -- )
-M: item-editor prefix-item
+: prefix-item ( editor -- )
     [ control-value outline-model get [ swap prefix ] change-model ]
     [ hide-glass ]
     bi
@@ -56,23 +55,19 @@ set-gestures
 ! ----------------------------------------------- outline-table
 TUPLE: outline-table < table popup
     ;
-GENERIC: finish-outline ( table -- )
-M: outline-table finish-outline
-    save-data close-window
-    ;
-GENERIC: outline-index ( table -- index )
-M: outline-table outline-index
+: outline-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
-GENERIC: selection-rect ( table -- rectangle )
-M: outline-table selection-rect
+: selection-rect ( table -- rectangle )
     [ [ line-height ] [ outline-index ] bi * 0 swap ]
     [ [ total-width>> ] [ line-height ] bi 2 + ]
     bi
     [ 2array ] 2bi@ <rect>
     ;
-GENERIC: jot ( table -- )
-M: outline-table jot
+: finish-outline ( table -- )
+    save-data close-window
+    ;
+: jot ( table -- )
     <item-editor>
     over selection-rect '[ _ show-popup ]
     [ request-focus ]
@@ -82,7 +77,6 @@ outline-table
 H{
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ jot ] }
-!    { T{ key-down { sym "a" } }     [ archive ] }
     }
 set-gestures
 : <outline-table> ( -- table )
