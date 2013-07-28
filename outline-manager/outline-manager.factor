@@ -3,8 +3,9 @@
 USING: accessors arrays colors.constants continuations fry
     io io.backend io.files io.encodings.utf8
     kernel math math.rectangles models namespaces sequences
-    ui ui.gadgets.glass ui.gadgets ui.gadgets.editors ui.gadgets.labeled
-    ui.gadgets.line-support ui.gadgets.tables
+    ui ui.gadgets.borders ui.gadgets.glass ui.gadgets ui.gadgets.editors
+    ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
+    ui.gadgets.tables
     ui.gestures ui.pens.solid
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -19,7 +20,13 @@ SYMBOL: outline-model ! for M: item-editor prefix-item
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
-: default-font ( gadget -- gadget ) 16 over font>> size<<
+: default-font ( gadget -- ) 16 swap font>> size<<
+    ;
+: <labeled-gadget-with-default-font> ( gadget title -- gadget' )
+    <labeled-gadget>
+    dup children>> [ border? ] find nip
+    children>> [ label? ] find nip
+    default-font
     ;
 ! ----------------------------------------------- item-editor
 TUPLE: item-editor < editor
@@ -37,9 +44,9 @@ H{
 set-gestures
 : <item-editor> ( -- editor )
     item-editor new-editor
-    default-font
+    dup default-font
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    "new item line" <labeled-gadget>
+    "new item line" <labeled-gadget-with-default-font>
     ;
 ! ----------------------------------------------- outline-table
 TUPLE: outline-table < table popup
@@ -81,9 +88,8 @@ set-gestures
 : <outline-table> ( -- table )
     outline-model get trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
-    default-font
-    current-file get normalize-path <labeled-gadget>
-    16 over children>> second children>> first font>> size<<
+    dup default-font
+    current-file get normalize-path <labeled-gadget-with-default-font>
     { 333 666 } >>pref-dim
     ;
 ! ----------------------------------------------- main
