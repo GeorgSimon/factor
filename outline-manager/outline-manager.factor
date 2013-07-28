@@ -13,29 +13,25 @@ IN: outline-manager
 USE: prettyprint ! todo for debugging only
 
 SYMBOL: outline-model
-! ---------
-! utilities
-! ---------
+! -------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
 : default-font ( gadget -- gadget ) 16 over font>> size<<
     ;
-! -----------
-! item-editor
-! -----------
+! -------------------------------- item-editor
 TUPLE: item-editor < editor
     ;
-GENERIC: make-item ( editor -- )
-M: item-editor make-item
+GENERIC: prefix-item ( editor -- )
+M: item-editor prefix-item
     [ control-value outline-model get [ swap prefix ] change-model ]
     [ hide-glass ]
     bi
     ;
 item-editor
 H{
-    { T{ key-down { sym "RET" } }   [ make-item ] }
+    { T{ key-down { sym "RET" } }   [ prefix-item ] }
     }
 set-gestures
 : <item-editor> ( -- editor )
@@ -44,9 +40,7 @@ set-gestures
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "new item line" <labeled-gadget>
     ;
-! -------------
-! outline-table
-! -------------
+! -------------------------------- outline-table
 TUPLE: outline-table < table popup
     ;
 GENERIC: init-selection ( table -- )
@@ -85,9 +79,7 @@ set-gestures
     { 333 666 } >>pref-dim
     default-font
     ;
-! ----
-! main
-! ----
+! -------------------------------- main
 : outline-manager ( -- )
     "outline.txt"
     [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
