@@ -120,16 +120,14 @@ set-gestures
     outline-model get trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
     dup default-font
-    "current-file get normalize-path" <labeled-gadget-with-default-font>
+    outline-file get path>> normalize-path
+    <labeled-gadget-with-default-font>
     { 333 666 } >>pref-dim
     ;
 ! ------------------------------------------------- main
 : outline-manager ( -- )
-    "outline.txt"
-    <table-model>
-    [ outline-model set ]
-    [ <file-model> ]
-    bi
+    "outline.txt" <table-model>
+    [ outline-model set ] [ <file-model> ] bi
     [ outline-file set ] [ read-file ] bi
     [ <outline-table> "Outline Manager" open-window ] with-ui
     ;
