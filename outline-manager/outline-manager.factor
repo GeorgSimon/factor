@@ -2,7 +2,7 @@
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays colors.constants continuations fry
     io io.backend io.files io.encodings.utf8
-    kernel math math.rectangles models namespaces sequences
+    kernel math math.order math.rectangles models namespaces sequences
     ui ui.gadgets.borders ui.gadgets.glass ui.gadgets ui.gadgets.editors
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.tables
@@ -50,7 +50,7 @@ M: file-model model-changed ( model observer -- )
     ;
 : (read-file) ( path -- lines )
     [ utf8 file-lines ]
-    [ error>message " : " append write print flush { } ]
+    [ error>message " : " [ write ] bi@ print flush { } ]
     recover
     ;
 : read-file ( file-model -- )
@@ -110,10 +110,24 @@ TUPLE: outline-table < table popup
     [ request-focus ]
     bi
     ;
+: (archive) ( table -- )
+    [   [ selection-index>> value>> dup ] [ model>> ] bi
+        [ remove-nth ] change-model
+        ]
+    [   [ control-value length ] [ selection-index>> ] bi
+        [ drop 1 - min ] change-model
+        ]
+    bi
+    ;
+: archive ( table -- )
+    dup selection-index>> value>>
+    [ (archive) ] [ drop "No item selected" print flush ] if
+    ;
 outline-table
 H{
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
     { T{ key-down { sym " " } }     [ pop-editor ] }
+    { T{ key-down { sym "a" } }     [ archive ] }
     }
 set-gestures
 : <outline-table> ( -- table )
