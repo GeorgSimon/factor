@@ -13,9 +13,10 @@ IN: outline-manager
 
 USE: prettyprint ! todo for development and debugging only
 
-SYMBOLS: current-file outline-model
-    ;
-! ----------------------------------------------- utilities
+SYMBOL: outline-model   ! jot can find outline here
+SYMBOL: outline-file    ! save-data must know which files to save
+
+! ------------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
@@ -28,17 +29,58 @@ SYMBOLS: current-file outline-model
     children>> [ label? ] find nip
     default-font
     ;
-! ----------------------------------------------- item-editor
+! ------------------------------------------------- table-model
+TUPLE: table-model < model
+    ;
+: init-table ( lines table-model -- ) ! without notifying observers
+    [ [ 1array ] map ] dip value<<
+    ;
+: table>lines ( table-model -- lines )
+    value>> [ first ] map
+    ;
+: <table-model> ( -- table-model )
+    { { "1 column" } } table-model new-model
+    ;
+! ------------------------------------------------- file management
+TUPLE: file-model < model path changed
+    ;
+M: file-model model-changed ( model observer -- )
+    t swap changed<<
+    drop
+    ;
+: (read-file) ( path -- lines )
+    [ utf8 file-lines ]
+    [ error>message " : " append write print flush { } ]
+    recover
+    ;
+: read-file ( file-model -- )
+    [ path>> (read-file) ] [ value>> ] bi init-table
+    ;
+: save-file ( file-model -- )
+    dup changed>>
+    [ [ value>> table>lines ] [ path>> ] bi utf8 set-file-lines ]
+    [ drop ]
+    if
+    ;
+: <file-model> ( path data-model -- file-model )
+    file-model new-model
+    swap >>path
+    dup dup value>> add-connection
+    ;
+: save-data ( -- )
+    outline-file get save-file
+    ;
+! ------------------------------------------------- item-editor
 TUPLE: item-editor < editor
     ;
-: prefix-item ( editor -- )
+: jot ( editor -- )
     [ control-value outline-model get [ swap prefix ] change-model ]
     [ hide-glass ]
     bi
     ;
 item-editor
 H{
-    { T{ key-down { sym "RET" } }   [ prefix-item ] }
+    { T{ key-down { sym "RET" } }   [ jot ] }
     }
 set-gestures
 : <item-editor> ( -- editor )
@@ -47,12 +89,7 @@ set-gestures
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "new item line" <labeled-gadget-with-default-font>
     ;
-! ----------------------------------------------- data management
-: save-data ( -- )
-    outline-model get value>> [ first ] map
-    current-file get utf8 set-file-lines
-    ;
-! ----------------------------------------------- outline-table
+! ------------------------------------------------- outline-table
 TUPLE: outline-table < table popup
     ;
 : outline-index ( table -- index )
@@ -67,7 +104,7 @@ TUPLE: outline-table < table popup
 : finish-outline ( table -- )
     save-data close-window
     ;
-: jot ( table -- )
+: pop-editor ( table -- )
     <item-editor>
     over selection-rect '[ _ show-popup ]
     [ request-focus ]
@@ -76,27 +113,24 @@ TUPLE: outline-table < table popup
 outline-table
 H{
     { T{ key-down { sym "ESC" } }   [ finish-outline ] }
-    { T{ key-down { sym " " } }     [ jot ] }
+    { T{ key-down { sym " " } }     [ pop-editor ] }
     }
 set-gestures
 : <outline-table> ( -- table )
     outline-model get trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
     dup default-font
-    current-file get normalize-path <labeled-gadget-with-default-font>
+    "current-file get normalize-path" <labeled-gadget-with-default-font>
     { 333 666 } >>pref-dim
     ;
-! ----------------------------------------------- main
-: init-outline-model ( -- )
-    current-file get
-    [ utf8 file-lines [ empty? not ] filter [ 1array ] map ]
-    [ error>message " : " append write print flush { } ]
-    recover
-    <model> outline-model set
-    ;
+! ------------------------------------------------- main
 : outline-manager ( -- )
-    "outline.txt" current-file set
-    init-outline-model
+    "outline.txt"
+    <table-model>
+    [ outline-model set ]
+    [ <file-model> ]
+    bi
+    [ outline-file set ] [ read-file ] bi
     [ <outline-table> "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
