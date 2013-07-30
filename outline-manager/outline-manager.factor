@@ -93,6 +93,12 @@ set-gestures
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table popup
     ;
+M: outline-table handle-gesture ( gesture gadget -- ? )
+    2dup get-gesture-handler
+    [ ( gadget -- ) call-effect drop f ]
+    [ drop dup key-down? [ . flush ] [ drop ] if t ]
+    if*
+    ;
 : outline-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
