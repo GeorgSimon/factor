@@ -130,17 +130,29 @@ M: outline-table handle-gesture ( gesture gadget -- ? )
     dup selection-index>> value>>
     [ (archive) ] [ drop "No item selected" print flush ] if
     ;
-! todo : move-down ( table -- )
-! todo     dup [ selection-index>> value>> ] [ control-value length 1 - ] bi <
-! todo     [ (move-down) ] [ drop "No movement possible" print flush ] if
-! todo     ;
+: (?move) ( table index flag direction -- )
+    swap
+    [ over + rot model>> [ [ exchange ] keep ] change-model ]
+    [ 3drop "No movement possible" print flush ]
+    if
+    ;
+: move-down ( table -- )
+    dup [ selection-index>> value>> dup ] [ control-value length 1 - ] bi <
+    1 (?move)
+    ;
+: move-up ( table -- )
+    dup selection-index>> value>> dup 0 > -1 (?move)
+    ;
 outline-table
 H{
-    { T{ key-down { sym "DELETE" } }    [ archive ] }
-    { T{ key-down { sym "ESC" } }       [ finish-outline ] }
-    { T{ key-down { sym " " } }         [ pop-editor ] }
-    { T{ key-down { sym "a" } }         [ archive ] }
-    ! todo { T{ key-down { sym "t" } }         [ 1 move-selected ] }
+    { T{ key-down { sym "DELETE" } }                [ archive ] }
+    { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
+    { T{ key-down { sym "ESC" } }                   [ finish-outline ] }
+    { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
+    { T{ key-down { sym " " } }                     [ pop-editor ] }
+    { T{ key-down { sym "a" } }                     [ archive ] }
+    { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym "t" } }                     [ move-down ] }
     }
 set-gestures
 : (outline-table) ( table-model -- table )
