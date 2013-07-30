@@ -1,6 +1,6 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays colors.constants continuations fry
+USING: accessors arrays colors.constants combinators continuations fry
     io io.backend io.files io.encodings.utf8
     kernel math math.order math.rectangles models namespaces sequences
     ui ui.gadgets.borders ui.gadgets.glass ui.gadgets ui.gadgets.editors
@@ -39,7 +39,8 @@ TUPLE: table-model < model
     value>> [ first ] map
     ;
 : <table-model> ( -- table-model )
-    { { "1 column" } } table-model new-model
+    { { "1 column" } } ! will be overwritten by read-file
+    table-model new-model
     ;
 ! ------------------------------------------------- file management
 TUPLE: file-model < model path changed
@@ -123,19 +124,27 @@ TUPLE: outline-table < table popup
     dup selection-index>> value>>
     [ (archive) ] [ drop "No item selected" print flush ] if
     ;
+! todo : move-down ( table -- )
+! todo     dup [ selection-index>> value>> ] [ control-value length 1 - ] bi <
+! todo     [ (move-down) ] [ drop "No movement possible" print flush ] if
+! todo     ;
 outline-table
 H{
-    { T{ key-down { sym "ESC" } }   [ finish-outline ] }
-    { T{ key-down { sym " " } }     [ pop-editor ] }
-    { T{ key-down { sym "a" } }     [ archive ] }
+    { T{ key-down { sym "DELETE" } }    [ archive ] }
+    { T{ key-down { sym "ESC" } }       [ finish-outline ] }
+    { T{ key-down { sym " " } }         [ pop-editor ] }
+    { T{ key-down { sym "a" } }         [ archive ] }
+    ! todo { T{ key-down { sym "t" } }         [ 1 move-selected ] }
     }
 set-gestures
-: <outline-table> ( -- table )
-    outline-model get trivial-renderer outline-table new-table
+: (outline-table) ( table-model -- table )
+    trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
     dup default-font
-    outline-file get path>> normalize-path
-    <labeled-gadget-with-default-font>
+    ;
+: <outline-table> ( file-model table-model -- table )
+    (outline-table)
+    swap path>> normalize-path <labeled-gadget-with-default-font>
     { 333 666 } >>pref-dim
     ;
 ! ------------------------------------------------- main
@@ -143,6 +152,8 @@ set-gestures
     "outline.txt" <table-model>
     [ outline-model set ] [ <file-model> ] bi
     [ outline-file set ] [ read-file ] bi
-    [ <outline-table> "Outline Manager" open-window ] with-ui
+    [   outline-file get outline-model get <outline-table>
+        "Outline Manager" open-window ]
+    with-ui
     ;
 MAIN: outline-manager
