@@ -13,7 +13,7 @@ IN: outline-manager
 
 USE: prettyprint ! todo for development and debugging only
 
-SYMBOL: outline-model   ! jot can find outline here
+SYMBOL: outline-pointer ! jot can find outline-table here
 SYMBOL: outline-file    ! save-data must know which files to save
 
 ! ------------------------------------------------- utilities
@@ -75,7 +75,14 @@ M: file-model model-changed ( model observer -- )
 TUPLE: item-editor < editor
     ;
 : jot ( editor -- )
-    [ control-value outline-model get [ swap prefix ] change-model ]
+    [   control-value
+        outline-pointer get
+        [ selection-index>> swap over value>> ]
+        [ model>> ]
+        bi
+        [ insert-nth ] change-model
+        [ 1 - ] change-model ! pointing to the jotted item
+        ]
     [ hide-glass ]
     bi
     ;
@@ -161,17 +168,16 @@ set-gestures
     dup default-font
     ;
 : <outline-table> ( file-model table-model -- table )
-    (outline-table)
+    (outline-table) dup outline-pointer set
     swap path>> normalize-path <labeled-gadget-with-default-font>
     { 333 666 } >>pref-dim
     ;
 ! ------------------------------------------------- main
 : outline-manager ( -- )
     "outline.txt" <table-model>
-    [ outline-model set ] [ <file-model> ] bi
-    [ outline-file set ] [ read-file ] bi
-    [   outline-file get outline-model get <outline-table>
-        "Outline Manager" open-window ]
-    with-ui
+    [ <file-model> [ outline-file set ] [ read-file ] bi outline-file get ]
+    keep
+    <outline-table>
+    '[ _ "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
