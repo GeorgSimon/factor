@@ -21,7 +21,7 @@ SYMBOL: outline-file    ! save-data must know which files to save
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
-: outline-index ( table -- index )
+: target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
 : default-font ( gadget -- ) 16 swap font>> size<<
@@ -80,15 +80,13 @@ TUPLE: item-editor < editor
 : jot ( editor -- )
     [   control-value                               ! new
         outline-pointer get                         ! new table
-        [ outline-index swap over ]
-        [ model>> ]
-        bi                                          ! index new index model
+        [ target-index swap over ] [ model>> ] bi   ! index new index model
         [ insert-nth ] change-model                 ! index
 
         "Index vor Einfügen : " write ! todo
         dup . ! todo
         "Index nach Einfügen : " write ! todo
-        outline-pointer get outline-index . flush ! todo
+        outline-pointer get target-index . flush ! todo
 
         outline-pointer get swap select-row ! ( table n -- )
         ]
@@ -120,7 +118,7 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     [ (handle-gesture) f ] [ ?update-counter ] if*
     ;
 : selection-rect ( table -- rectangle )
-    [ [ line-height ] [ outline-index ] bi * 0 swap ]
+    [ [ line-height ] [ target-index ] bi * 0 swap ]
     [ [ total-width>> ] [ line-height ] bi 2 + ]
     bi
     [ 2array ] 2bi@ <rect>
@@ -160,11 +158,7 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     1 (?move)
     ;
 : move-up ( table -- )
-    dup selection-index>>
-    dup . flush ! todo
-    dup -rot ! todo
-    value>> dup 0 > -1 (?move)
-    . flush ! todo
+    dup selection-index>> value>> dup 0 > -1 (?move)
     ;
 outline-table
 H{
