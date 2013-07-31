@@ -21,6 +21,9 @@ SYMBOL: outline-file    ! save-data must know which files to save
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
+: outline-index ( table -- index )
+    selection-index>> value>> [ 0 ] unless*
+    ;
 : default-font ( gadget -- ) 16 swap font>> size<<
     ;
 : <labeled-gadget-with-default-font> ( gadget title -- gadget' )
@@ -75,13 +78,19 @@ M: file-model model-changed ( model observer -- )
 TUPLE: item-editor < editor
     ;
 : jot ( editor -- )
-    [   control-value
-        outline-pointer get
-        [ selection-index>> swap over value>> ]
+    [   control-value                               ! new
+        outline-pointer get                         ! new table
+        [ outline-index swap over ]
         [ model>> ]
-        bi
-        [ insert-nth ] change-model
-        [ 1 - ] change-model ! pointing to the jotted item
+        bi                                          ! index new index model
+        [ insert-nth ] change-model                 ! index
+
+        "Index vor Einfügen : " write ! todo
+        dup . ! todo
+        "Index nach Einfügen : " write ! todo
+        outline-pointer get outline-index . flush ! todo
+
+        outline-pointer get swap select-row ! ( table n -- )
         ]
     [ hide-glass ]
     bi
@@ -98,16 +107,17 @@ set-gestures
     "new item line" <labeled-gadget-with-default-font>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table popup
+TUPLE: outline-table < table popup counter
     ;
-M: outline-table handle-gesture ( gesture gadget -- ? )
-    2dup get-gesture-handler
-    [ ( gadget -- ) call-effect drop f ]
-    [ drop dup key-down? [ . flush ] [ drop ] if t ]
-    if*
+: (handle-gesture) ( gesture table quot -- )
+    [ ( outline-table -- ) call-effect ] [ drop f swap counter<< ] 2bi drop
     ;
-: outline-index ( table -- index )
-    selection-index>> value>> [ 0 ] unless*
+: ?update-counter ( gesture outline-table -- propagate-flag )
+    drop dup key-down? [ . flush ] [ drop ] if t
+    ;
+M: outline-table handle-gesture ( gesture outline-table -- ? )
+    2dup get-gesture-handler                        ! gesture table quot/f
+    [ (handle-gesture) f ] [ ?update-counter ] if*
     ;
 : selection-rect ( table -- rectangle )
     [ [ line-height ] [ outline-index ] bi * 0 swap ]
@@ -128,8 +138,10 @@ M: outline-table handle-gesture ( gesture gadget -- ? )
     [   [ selection-index>> value>> dup ] [ model>> ] bi
         [ remove-nth ] change-model
         ]
-    [   [ control-value length ] [ selection-index>> ] bi
-        [ drop 1 - min ] change-model
+    [   [ control-value length [ drop f ] [ 1 - min ] if-zero ]
+        [ selection-index>> ]
+        bi
+        set-model
         ]
     bi
     ;
@@ -148,7 +160,11 @@ M: outline-table handle-gesture ( gesture gadget -- ? )
     1 (?move)
     ;
 : move-up ( table -- )
-    dup selection-index>> value>> dup 0 > -1 (?move)
+    dup selection-index>>
+    dup . flush ! todo
+    dup -rot ! todo
+    value>> dup 0 > -1 (?move)
+    . flush ! todo
     ;
 outline-table
 H{
