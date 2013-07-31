@@ -24,14 +24,6 @@ SYMBOL: outline-file    ! save-data must know which files to save
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
-: default-font ( gadget -- ) 16 swap font>> size<<
-    ;
-: <labeled-gadget-with-default-font> ( gadget title -- gadget' )
-    <labeled-gadget>
-    dup children>> [ border? ] find nip
-    children>> [ label? ] find nip
-    default-font
-    ;
 ! ------------------------------------------------- table-model
 TUPLE: table-model < model
     ;
@@ -94,9 +86,8 @@ H{
 set-gestures
 : <item-editor> ( -- editor )
     item-editor new-editor
-    dup default-font
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    "new item line" <labeled-gadget-with-default-font>
+    "new item line" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table popup repeats
@@ -105,7 +96,7 @@ TUPLE: outline-table < table popup repeats
     [ ( outline-table -- ) call-effect ] [ drop f swap repeats<< ] 2bi drop
     ;
 : update-repeats ( outline-table number -- outline-table )
-    swap [ [ 10 * + ] when* dup . flush ] change-repeats
+    swap [ [ 10 * + ] when* ] change-repeats
     ;
 : ?update-repeats ( gesture outline-table -- propagate-flag )
     swap gesture>string
@@ -181,11 +172,10 @@ set-gestures
 : (outline-table) ( table-model -- table )
     trivial-renderer outline-table new-table
     t >>selection-required? ! better behaviour before first cursor move
-    dup default-font
     ;
 : <outline-table> ( file-model table-model -- table )
     (outline-table) dup outline-pointer set
-    swap path>> normalize-path <labeled-gadget-with-default-font>
+    swap path>> normalize-path <labeled-gadget>
     { 333 666 } >>pref-dim
     ;
 ! ------------------------------------------------- main
