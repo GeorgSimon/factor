@@ -17,8 +17,8 @@ SYMBOLS: global-font-size outline-file ;
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
-: set-label-font-size ( size gadget -- )
-    parent>> children>> [ border? ] find nip children>> [ label? ] find nip
+: set-label-font-size ( size labeled-gadget -- )
+    children>> [ border? ] find nip children>> [ label? ] find nip
     font>> size<<
     ;
 ! ------------------------------------------------- file-observer
@@ -68,11 +68,12 @@ set-gestures
     ;
 : make-outline-manager ( -- labeled-gadget )
     read-options
-!    [ value>> ] dip [ font>> size<< ] [ set-label-font-size ] 2bi
-    global-font-size get . flush
+    global-font-size get
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table>
+    2dup font>> size<<
     outline-file get path>> normalize-path <labeled-gadget>
+    [ set-label-font-size ] keep
     ;
 : outline-manager ( -- )
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
