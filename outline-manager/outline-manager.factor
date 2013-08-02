@@ -1,5 +1,8 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
+! #### = todo
+USING: classes generic prettyprint ; ! #### for development and debugging only
+
 USING: accessors arrays colors.constants combinators continuations fry
     io io.backend io.files io.encodings.utf8 kernel
     math math.order math.parser math.rectangles models namespaces sequences
@@ -11,8 +14,6 @@ USING: accessors arrays colors.constants combinators continuations fry
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 
-USE: prettyprint ! todo for development and debugging only
-
 SYMBOL: outline-pointer ! jot can find outline-table here
 SYMBOL: outline-file    ! save-data must know which files to save
 
@@ -23,6 +24,11 @@ SYMBOL: outline-file    ! save-data must know which files to save
     ;
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
+    ;
+TUPLE: font-model < model
+    ;
+: <font-model> ( -- font-model )
+    f font-model new-model
     ;
 ! ------------------------------------------------- table-model
 TUPLE: table-model < model
@@ -39,8 +45,8 @@ TUPLE: table-model < model
     ;
 ! ------------------------------------------------- file management
 TUPLE: file-model < model path changed
-    ;
-M: file-model model-changed ( model observer -- )
+    ; ! #### will be observed by file management
+M: file-model model-changed ( table-model file-model -- )
     t swap changed<<
     drop
     ;
@@ -59,9 +65,10 @@ M: file-model model-changed ( model observer -- )
     if
     ;
 : <file-model> ( path data-model -- file-model )
-    file-model new-model
-    swap >>path
-    dup dup value>> add-connection
+    file-model new-model    ! path file-m
+    swap >>path             ! file-m
+    dup dup value>>         ! file-m file-m=observer data-m=model
+    add-connection          ! file-m
     ;
 : save-data ( -- )
     outline-file get save-file
@@ -90,7 +97,17 @@ set-gestures
     "new item line" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table popup repeats
+TUPLE: outline-table < table popup repeats font-pointer
+    ;
+: set-label-font-size ( size gadget -- )
+    parent>> children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> size<<
+    ;
+: font-changed ( model observer -- )
+    [ value>> ] dip [ font>> size<< ] [ set-label-font-size ] 2bi
+    ;
+M: outline-table model-changed ( model observer -- )
+    over table-model? [ M\ table model-changed execute ] [ font-changed ] if
     ;
 : (handle-gesture) ( gesture table quot -- )
     [ ( outline-table -- ) call-effect ] [ drop f swap repeats<< ] 2bi drop
@@ -171,19 +188,24 @@ H{
 set-gestures
 : (outline-table) ( table-model -- table )
     trivial-renderer outline-table new-table
-    t >>selection-required? ! better behaviour before first cursor move
+    t >>selection-required? ! better behaviour before first cursor move ! #### ?
+    <font-model> 2dup add-connection >>font-pointer
     ;
 : <outline-table> ( file-model table-model -- table )
-    (outline-table) dup outline-pointer set
-    swap path>> normalize-path <labeled-gadget>
+    (outline-table) dup outline-pointer set             ! file-m table
+    [ swap path>> normalize-path <labeled-gadget> ] keep
+    16 swap font-pointer>> set-model
     { 333 666 } >>pref-dim
     ;
 ! ------------------------------------------------- main
 : outline-manager ( -- )
-    "outline.txt" <table-model>
-    [ <file-model> [ outline-file set ] [ read-file ] bi outline-file get ]
-    keep
-    <outline-table>
+    "outline.txt" <table-model>                 ! path table-m
+    [   <file-model>                            ! file-m
+        [ outline-file set ] [ read-file ] bi   !
+        outline-file get                        ! file-m ! #### ugly
+        ]
+    keep                                        ! file-m table-m
+    <outline-table>                             ! table-gadget
     '[ _ "Outline Manager" open-window ] with-ui
     ;
 MAIN: outline-manager
