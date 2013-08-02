@@ -5,7 +5,8 @@ USING: classes prettyprint ; ! #### for development and debugging only
 
 USING: accessors arrays continuations
     io io.backend io.encodings.utf8 io.files kernel models namespaces sequences
-    ui ui.gadgets.labeled ui.gadgets.tables ui.gestures
+    ui ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
+    ui.gadgets.tables ui.gestures
     ;
 IN: outline-manager
 ! -------------------------------------------------
@@ -50,6 +51,7 @@ M: file-observer model-changed ! ####
     [ read-file dup ] [ model<< ] [ over add-connection ] tri
     ;
 : save-data ( file-observer-object -- )
+    "save-data : " write
     class-of . ! ####
     ;
 : <file-observer> ( path -- file-observer )
@@ -58,8 +60,12 @@ M: file-observer model-changed ! ####
 ! -------------------------------------------------
 TUPLE: outline-table < table
     ;
+: set-label-font-size ( size gadget -- )
+    parent>> children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> size<<
+    ;
 M: outline-table data-changed
-    [ value>> ] dip font>> size<<
+    [ value>> ] dip [ font>> size<< ] [ set-label-font-size ] 2bi
     ;
 : finish-manager ( gadget -- )
     outline-file get save-data
@@ -75,16 +81,15 @@ set-gestures
     outline-table new-table t >>selection-required?
     ;
 ! -------------------------------------------------
-: make-outline-manager ( -- outline-table )
+: make-outline-manager ( -- labeled-gadget )
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table>
-    <global-data>
-    2dup add-observer
+    <global-data> 2dup add-observer
+    [ outline-file get path>> normalize-path <labeled-gadget> ] dip
     16 over set-global-data
     global-font-size set
     ;
 : outline-manager ( -- )
-    make-outline-manager outline-file get path>> <labeled-gadget>
-    [ "Outline Manager" open-window ] curry with-ui
+    make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
