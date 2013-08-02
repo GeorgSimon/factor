@@ -5,7 +5,7 @@ USING: classes prettyprint ; ! #### for development and debugging only
 
 USING: accessors arrays continuations
     io io.backend io.encodings.utf8 io.files kernel models namespaces sequences
-    ui ui.gadgets.tables ui.gestures
+    ui ui.gadgets.labeled ui.gadgets.tables ui.gestures
     ;
 IN: outline-manager
 ! -------------------------------------------------
@@ -84,6 +84,7 @@ set-gestures
     global-font-size set
     ;
 : outline-manager ( -- )
-    make-outline-manager [ "Outline Manager" open-window ] curry with-ui
+    make-outline-manager outline-file get path>> <labeled-gadget>
+    [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
