@@ -1,6 +1,7 @@
 ! USE: outline-manager refresh-all "outline-manager" test
 
-USING: accessors assocs classes namespaces outline-manager sequences tools.test
+USING: accessors assocs classes models namespaces
+    outline-manager sequences tools.test
     ui.gestures words
     ;
 
@@ -14,6 +15,10 @@ unit-test
 
 { [ finish-manager ] }
 [ T{ key-down { sym "ESC" } } outline-table "gestures" word-prop at ]
+unit-test
+
+{ model }
+[ outline-file get model>> class-of ]
 unit-test
 
 USING: prettyprint
