@@ -46,10 +46,11 @@ set-gestures
     ;
 ! -------------------------------------------------
 : outline-manager ( -- )
-    <global-data> global-font-size set
     { { "Hello world!" } } <model> trivial-renderer <outline-table>
-    dup global-font-size get add-observer
-    16 global-font-size get set-global-data
+    <global-data>
+    2dup add-observer
+    16 over set-global-data
+    global-font-size set
     [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
