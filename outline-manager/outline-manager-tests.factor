@@ -2,10 +2,10 @@
 
 USING: accessors assocs classes models namespaces
     outline-manager sequences tools.test
-    ui.gestures words
+    ui.gadgets.labeled ui.gestures words
     ;
 
-{ outline-table }
+{ labeled-gadget }
 [ make-outline-manager class-of ]
 unit-test
 
