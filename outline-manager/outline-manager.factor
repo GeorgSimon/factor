@@ -45,12 +45,14 @@ set-gestures
     outline-table new-table
     ;
 ! -------------------------------------------------
-: outline-manager ( -- )
+: make-outline-manager ( -- outline-table )
     { { "Hello world!" } } <model> trivial-renderer <outline-table>
     <global-data>
     2dup add-observer
     16 over set-global-data
     global-font-size set
-    [ "Outline Manager" open-window ] curry with-ui
+    ;
+: outline-manager ( -- )
+    make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
