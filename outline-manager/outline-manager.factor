@@ -1,8 +1,9 @@
 ! Copyright (C) 2013 Georg Simon.
 ! See http://factorcode.org/license.txt for BSD license.
 ! #### = todo
-USING: classes prettyprint ; ! #### for development and debugging only
-
+! #### for development and debugging only :
+USING: classes nested-comments prettyprint
+    ;
 USING: accessors arrays colors.constants combinators continuations
     io io.backend io.encodings.utf8 io.files kernel
     math math.rectangles models namespaces sequences
@@ -81,7 +82,7 @@ set-gestures
     "new item line" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table item-editor popup
+TUPLE: outline-table < table editor-gadget popup
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler
@@ -111,8 +112,20 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     bi
     [ 2array ] 2bi@ <rect>
     ;
+: init-editor ( editor -- )
+    dup control-value first empty?
+    [
+        "item title"                    ! editor string
+        0 over length 2array swap       ! editor array string
+        pick user-input* drop           ! editor array
+        swap caret>> set-model          !
+    ] [                                 ! editor
+        { 0 0 } swap mark>> set-model
+        ]
+    if
+    ;
 : pop-editor ( table -- )
-    dup item-editor>>
+    dup editor-gadget>> dup content>> init-editor
     over selection-rect [ show-popup ] curry [ request-focus ] bi
     ;
 outline-table
@@ -135,7 +148,7 @@ set-gestures
     read-options
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table> dup outline-pointer set
-    <item-editor> set-font-sizes >>item-editor
+    <item-editor> set-font-sizes >>editor-gadget
     outline-file get path>> normalize-path <labeled-gadget> set-font-sizes
     ;
 : outline-manager ( -- )

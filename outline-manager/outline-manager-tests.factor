@@ -10,7 +10,7 @@ IN: outline-manager.tests
     [ get-data connections>> first path>> ] [ path>> ] bi
     ] unit-test
 { labeled-gadget outline-table item-editor } [
-    make-outline-manager dup content>> dup item-editor>> content>>
+    make-outline-manager dup content>> dup editor-gadget>> content>>
     [ class-of ] tri@
     ] unit-test
 
