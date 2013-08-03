@@ -9,8 +9,9 @@ IN: outline-manager.tests
     ".kullulu/config.txt" <file-observer>
     [ get-data connections>> first path>> ] [ path>> ] bi
     ] unit-test
-{ labeled-gadget outline-table } [
-    make-outline-manager dup content>> [ class-of ] bi@
+{ labeled-gadget outline-table item-editor } [
+    make-outline-manager dup content>> dup item-editor>> content>>
+    [ class-of ] tri@
     ] unit-test
 
 USING: prettyprint

@@ -3,11 +3,13 @@
 ! #### = todo
 USING: classes prettyprint ; ! #### for development and debugging only
 
-USING: accessors arrays continuations
-    io io.backend io.encodings.utf8 io.files kernel math models namespaces
-    sequences
-    ui ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
+USING: accessors arrays colors.constants continuations
+    io io.backend io.encodings.utf8 io.files kernel
+    math math.rectangles models namespaces sequences
+    ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
+    ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.tables ui.gestures
+    ui.pens.solid
     ;
 IN: outline-manager
 ! -------------------------------------------------
@@ -20,6 +22,9 @@ SYMBOLS: global-font-size outline-file ;
 : set-label-font-size ( size labeled-gadget -- )
     children>> [ border? ] find nip children>> [ label? ] find nip
     font>> size<<
+    ;
+: target-index ( table -- index )
+    selection-index>> value>> [ 0 ] unless*
     ;
 ! ------------------------------------------------- file-observer
 TUPLE: file-observer path model dirty
@@ -46,7 +51,17 @@ M: file-observer model-changed
 : <file-observer> ( path -- file-observer-object )
     file-observer new swap >>path
     ;
-! -------------------------------------------------
+! ------------------------------------------------- item-editor
+TUPLE: item-editor < editor
+    ;
+: <item-editor> ( font-size -- editor )
+    item-editor new-editor
+    2dup font>> size<<
+    COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
+    "new item line" <labeled-gadget>
+    [ set-label-font-size ] keep
+    ;
+! ------------------------------------------------- outline-table
 TUPLE: outline-table < table item-editor popup
     ;
 : save-all-data ( -- ) ! to be called periodically
@@ -55,16 +70,29 @@ TUPLE: outline-table < table item-editor popup
 : finish-manager ( gadget -- )
     save-all-data close-window
     ; inline
+: selection-rect ( table -- rectangle )
+    [ [ line-height ] [ target-index ] bi * 0 swap ]
+    [ [ total-width>> ] [ line-height ] bi 2 + ]
+    bi
+    [ 2array ] 2bi@ <rect>
+    ;
+: pop-editor ( table -- )
+    dup item-editor>>
+    over selection-rect [ show-popup ] curry
+    [ request-focus ]
+    bi
+    ;
 outline-table
 H{
     { T{ key-down { sym "ESC" } }   [ finish-manager ] }
+    { T{ key-down { sym " " } }     [ pop-editor ] }
     }
 set-gestures
 
 : <outline-table> ( model renderer -- table )
-    outline-table new-table t >>selection-required?
+    outline-table new-table t >>selection-required? ! #### necessary?
     ;
-! -------------------------------------------------
+! ------------------------------------------------- main
 : read-options ( -- ) ! #### stub
     16 global-font-size set
     ;
@@ -74,6 +102,7 @@ set-gestures
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table>
     2dup font>> size<<
+    over <item-editor> >>item-editor
     outline-file get path>> normalize-path <labeled-gadget>
     [ set-label-font-size ] keep
     ;
