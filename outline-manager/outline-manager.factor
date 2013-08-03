@@ -85,7 +85,19 @@ TUPLE: outline-table < table item-editor popup
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler
-    [ ( outline-table -- ) call-effect drop f ] [ drop . flush t ] if*
+    [ ( outline-table -- ) call-effect drop f ]
+    [ drop dup class-of key-down = [ gesture>string . flush ] [ drop ] if t ]
+    if*
+    ;
+: (archive) ( table object -- )
+    "Object to archive : " write . flush ! ####
+    dup [ selection-index>> value>> dup ] [ model>> ] bi
+    [ remove-nth ] change-model
+    select-row
+    ; inline
+: archive ( table -- )
+    dup (selected-row)
+    [ (archive) ] [ 2drop "No item selected" print flush ] if
     ;
 : save-all-data ( -- ) ! to be called periodically
     outline-file get save-data
@@ -105,8 +117,10 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     ;
 outline-table
 H{
-    { T{ key-down { sym "ESC" } }   [ finish-manager ] }
-    { T{ key-down { sym " " } }     [ pop-editor ] }
+    { T{ key-down { sym "DELETE" } }    [ archive ] }
+    { T{ key-down { sym "a" } }         [ archive ] }
+    { T{ key-down { sym "ESC" } }       [ finish-manager ] }
+    { T{ key-down { sym " " } }         [ pop-editor ] }
     }
 set-gestures
 
