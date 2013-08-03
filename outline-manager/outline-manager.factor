@@ -79,7 +79,7 @@ set-gestures
 : <item-editor> ( -- labeled-editor )
     item-editor new-editor
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    "new item line" <labeled-gadget>
+    "item title editor" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table editor-gadget popup
@@ -106,6 +106,19 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
 : finish-manager ( gadget -- )
     save-all-data close-window
     ; inline
+: (?move) ( table index flag direction -- )
+    swap
+    [ over + rot model>> [ [ exchange ] keep ] change-model ]
+    [ 3drop "No movement possible" print flush ]
+    if
+    ;
+: move-down ( table -- )
+    dup [ selection-index>> value>> dup ] [ control-value length 1 - ] bi <
+    1 (?move)
+    ;
+: move-up ( table -- )
+    dup selection-index>> value>> dup 0 > -1 (?move)
+    ;
 : selection-rect ( table -- rectangle )
     [ [ line-height ] [ target-index ] bi * 0 swap ]
     [ [ total-width>> ] [ line-height ] bi 2 + ]
@@ -130,10 +143,14 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     ;
 outline-table
 H{
-    { T{ key-down { sym "DELETE" } }    [ archive ] }
-    { T{ key-down { sym "a" } }         [ archive ] }
-    { T{ key-down { sym "ESC" } }       [ finish-manager ] }
-    { T{ key-down { sym " " } }         [ pop-editor ] }
+    { T{ key-down { sym "DELETE" } }                [ archive ] }
+    { T{ key-down { sym "a" } }                     [ archive ] }
+    { T{ key-down { sym "ESC" } }                   [ finish-manager ] }
+    { T{ key-down { sym "t" } }                     [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
+    { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym " " } }                     [ pop-editor ] }
     }
 set-gestures
 
