@@ -1,25 +1,18 @@
 ! USE: outline-manager refresh-all "outline-manager" test
 
-USING: accessors assocs classes models namespaces
-    outline-manager sequences tools.test
-    ui.gadgets.labeled ui.gestures words
+USING: accessors classes kernel outline-manager sequences tools.test
+    ui.gadgets.labeled
     ;
+IN: outline-manager.tests
 
-{ labeled-gadget }
-[ make-outline-manager class-of ]
-unit-test
-
-{ outline-table }
-[ global-font-size get observers>> [ class-of ] map first ]
-unit-test
-
-{ [ finish-manager ] }
-[ T{ key-down { sym "ESC" } } outline-table "gestures" word-prop at ]
-unit-test
-
-{ model }
-[ outline-file get model>> class-of ]
-unit-test
+{ ".kullulu/config.txt" ".kullulu/config.txt" } [
+    ".kullulu/config.txt" <file-observer>
+    [ get-data connections>> first path>> ] [ path>> ] bi
+    ] unit-test
+{ labeled-gadget outline-table } [
+    make-outline-manager dup content>> [ class-of ] bi@
+    ] unit-test
 
 USING: prettyprint
     ;
+

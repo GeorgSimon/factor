@@ -22,12 +22,12 @@ SYMBOLS: global-font-size outline-file ;
     font>> size<<
     ;
 ! ------------------------------------------------- file-observer
-TUPLE: file-observer path model
+TUPLE: file-observer path model dirty
     ;
-M: file-observer model-changed ! ####
-    "file-observer model-changed" print
-    [ class-of . ] bi@
-    flush
+M: file-observer model-changed
+    "file-observer model-changed : " write
+    class-of . flush
+    t swap dirty<<
     ;
 : read-file ( path -- model )
     path>>
@@ -43,15 +43,17 @@ M: file-observer model-changed ! ####
     "save-data : " write
     class-of . ! ####
     ;
-: <file-observer> ( path -- file-observer )
+: <file-observer> ( path -- file-observer-object )
     file-observer new swap >>path
     ;
 ! -------------------------------------------------
-TUPLE: outline-table < table
+TUPLE: outline-table < table item-editor popup
+    ;
+: save-all-data ( -- ) ! to be called periodically
+    outline-file get save-data
     ;
 : finish-manager ( gadget -- )
-    outline-file get save-data
-    close-window
+    save-all-data close-window
     ; inline
 outline-table
 H{
