@@ -3,7 +3,7 @@
 ! #### = todo
 USING: classes prettyprint ; ! #### for development and debugging only
 
-USING: accessors arrays colors.constants continuations
+USING: accessors arrays colors.constants combinators continuations
     io io.backend io.encodings.utf8 io.files kernel
     math math.rectangles models namespaces sequences
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
@@ -24,7 +24,7 @@ SYMBOLS: global-font-size outline-file outline-pointer ;
     children>> [ border? ] find nip children>> [ label? ] find nip
     font>> size<<
     ;
-: set-font-sizes ( labeled-gadget -- labeled-gadget' )
+: set-font-sizes ( labeled-gadget -- labeled-gadget' ) ! #### use change-font ?
     global-font-size get swap
     2dup content>> font>> size<<
     [ set-label-font-size ] keep
@@ -82,6 +82,10 @@ set-gestures
     ;
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table item-editor popup
+    ;
+M: outline-table handle-gesture ( gesture outline-table -- ? )
+    2dup get-gesture-handler
+    [ ( outline-table -- ) call-effect drop f ] [ drop . flush t ] if*
     ;
 : save-all-data ( -- ) ! to be called periodically
     outline-file get save-data
