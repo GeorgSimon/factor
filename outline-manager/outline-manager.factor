@@ -6,7 +6,7 @@ USING: classes nested-comments prettyprint
     ;
 USING: accessors arrays colors.constants combinators continuations
     io io.backend io.encodings.utf8 io.files kernel
-    math math.rectangles models namespaces sequences
+    math math.parser math.rectangles models namespaces sequences
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.tables ui.gestures
@@ -82,13 +82,25 @@ set-gestures
     "item title editor" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table editor-gadget popup
+TUPLE: outline-table < table editor-gadget popup repeats
+    ;
+: (handle-gesture) ( gesture outline-table handler -- f )
+    over repeats>> [ 1 ] unless*
+    [ 2dup ( outline-table -- ) call-effect ] times
+    drop f swap repeats<< drop f
+    ;
+: update-repeats ( outline-table number -- outline-table )
+    swap [ [ 10 * + 100 mod ] when* ] change-repeats ! #### 100 as option ?
+    dup repeats>> . flush ! ####
+    ;
+: ?update-repeats ( gesture outline-table -- propagate-flag )
+    swap gesture>string
+    dup "BACKSPACE" =
+    [ drop f >>repeats t ] [ string>number [ update-repeats f ] [ t ] if* ] if
+    nip ! outline-table
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
-    2dup get-gesture-handler
-    [ ( outline-table -- ) call-effect drop f ]
-    [ drop dup class-of key-down = [ gesture>string . flush ] [ drop ] if t ]
-    if*
+    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-repeats ] if*
     ;
 : (archive) ( table object -- )
     "Object to archive : " write . flush ! ####
