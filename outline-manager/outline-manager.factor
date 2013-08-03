@@ -23,6 +23,11 @@ SYMBOLS: global-font-size outline-file ;
     children>> [ border? ] find nip children>> [ label? ] find nip
     font>> size<<
     ;
+: set-font-sizes ( labeled-gadget -- labeled-gadget' )
+    global-font-size get swap
+    2dup content>> font>> size<<
+    [ set-label-font-size ] keep
+    ;
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
@@ -54,12 +59,10 @@ M: file-observer model-changed
 ! ------------------------------------------------- item-editor
 TUPLE: item-editor < editor
     ;
-: <item-editor> ( font-size -- editor )
+: <item-editor> ( -- labeled-editor )
     item-editor new-editor
-    2dup font>> size<<
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "new item line" <labeled-gadget>
-    [ set-label-font-size ] keep
     ;
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table item-editor popup
@@ -98,13 +101,10 @@ set-gestures
     ;
 : make-outline-manager ( -- labeled-gadget )
     read-options
-    global-font-size get
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table>
-    2dup font>> size<<
-    over <item-editor> >>item-editor
-    outline-file get path>> normalize-path <labeled-gadget>
-    [ set-label-font-size ] keep
+    <item-editor> set-font-sizes >>item-editor
+    outline-file get path>> normalize-path <labeled-gadget> set-font-sizes
     ;
 : outline-manager ( -- )
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
