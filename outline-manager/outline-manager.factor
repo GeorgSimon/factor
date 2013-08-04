@@ -198,7 +198,6 @@ set-gestures
     ;
 ! ------------------------------------------------- main
 : read-options ( -- )
-!    options 16 "font-size" set-word-prop
     ".kullulu/config.txt" home prepend-path fetch-lines
     [ empty? not ] filter [ first CHAR: # = not ] filter lines>words
     [   [   options swap
