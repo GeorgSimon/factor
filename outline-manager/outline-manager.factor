@@ -2,21 +2,21 @@
 ! See http://factorcode.org/license.txt for BSD license.
 ! #### = todo
 ! #### for development and debugging only :
-USING: classes nested-comments prettyprint
-    ;
+! USING: classes nested-comments ;
+
 USING: accessors arrays calendar colors.constants combinators continuations
-    io io.backend io.encodings.utf8 io.files kernel math math.parser
-    math.rectangles models models.arrow namespaces sequences timers
+    io io.backend io.encodings.utf8 io.files io.pathnames
+    kernel math math.parser math.rectangles models models.arrow
+    namespaces prettyprint sequences splitting timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.tables ui.gestures ui.pens.solid
-    vectors
+    vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
-SYMBOL: note-font-list
-SYMBOLS: outline-file outline-pointer save-interval user-font-size
+SYMBOLS: file-observers note-font-list options outline-pointer
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -25,6 +25,13 @@ SYMBOLS: outline-file outline-pointer save-interval user-font-size
     ;
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
+    ;
+: fetch-lines ( path -- lines )
+    [ utf8 file-lines ]
+    [ error>message write " : " write normalize-path print flush { } ]
+    recover
+    ;
+: lines>words ( lines -- arrayArray ) [ " " split [ empty? not ] filter ] map
     ;
 ! ------------------------------------------------- font-size management
 : note-font ( gadget -- gadget )
@@ -63,11 +70,7 @@ M: file-observer model-changed ( model observer -- )
     nip t swap dirty<<
     ;
 : read-file ( path -- model )
-    path>>
-    [ utf8 file-lines [ 1array ] map ]
-    [ error>message write " : " write normalize-path print flush { } ]
-    recover
-    <model> 
+    path>> fetch-lines [ 1array ] map <model> 
     ; inline
 : get-data ( file-observer-object -- model )
     [ read-file dup ] [ model<< ] [ over add-connection ] tri
@@ -127,7 +130,7 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
 : (archive) ( table object -- )
-    "Object to archive : " write . flush ! ####
+    "Line to archive : " write first . flush ! ####
     dup [ selection-index>> value>> dup ] [ model>> ] bi
     [ remove-nth ] change-model
     select-row
@@ -136,8 +139,8 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     dup (selected-row)
     [ (archive) ] [ 2drop "No item selected" print flush ] if
     ;
-: save-all-data ( -- ) ! to be called periodically
-    outline-file get save-data
+: save-all-data ( -- ) ! to be called periodically too
+    file-observers get [ save-data ] each
     ;
 : finish-manager ( gadget -- )
     save-all-data close-window
@@ -194,23 +197,39 @@ set-gestures
     outline-table new-table t >>selection-required?
     ;
 ! ------------------------------------------------- main
-: read-options ( -- ) ! #### stub
-    2 save-interval set
-    16 user-font-size set
+: read-options ( -- )
+    options  2 "save-interval" set-word-prop
+    options 16 "font-size" set-word-prop
+    ".kullulu/config.txt" home prepend-path fetch-lines
+    [ empty? not ] filter [ first CHAR: # = not ] filter lines>words
+    [   [   options swap
+            [ second string>number dup number>string write ]
+            [ first dup bl print ]
+            bi
+            set-word-prop
+            ]
+        [ drop "Syntax error :" write [ bl write ] each nl flush ]
+        recover
+        ]
+    each
+    flush
     ;
 : make-outline-manager ( -- arrow-frame )
-    "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
-    trivial-renderer <outline-table> note-font dup outline-pointer set
-    <item-editor> >>editor-gadget                       ! table
-    outline-file get path>> normalize-path              ! table title
+    "outline.txt" <file-observer>                       ! observer
+    [ path>> ] [ 1vector file-observers set ] [ get-data ] tri
+    trivial-renderer <outline-table> note-font
+    dup outline-pointer set
+    <item-editor> >>editor-gadget
+    swap normalize-path                                 ! table title
     f <model> [ pick calls<< ] keep                     ! table title model
     [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
     <arrow-frame> ! ( table title model quot -- frame )
-    user-font-size get set-noted
+    options "font-size" word-prop set-noted
     ;
 : outline-manager ( -- )
     read-options
-    [ save-all-data ] save-interval get minutes delayed-every start-timer
+    [ save-all-data ] options "save-interval" word-prop minutes delayed-every
+    start-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
