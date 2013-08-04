@@ -6,7 +6,7 @@ USING: classes nested-comments prettyprint
     ;
 USING: accessors arrays colors.constants combinators continuations
     io io.backend io.encodings.utf8 io.files kernel
-    math math.parser math.rectangles models namespaces sequences
+    math math.parser math.rectangles models models.arrow namespaces sequences
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.tables ui.gestures
@@ -37,15 +37,14 @@ SYMBOLS: global-font-size outline-file outline-pointer ;
 TUPLE: communicative-frame < frame
     ;
 M: communicative-frame focusable-child* ( gadget -- child )
-    children>> first
+    children>> [ labeled-gadget? ] find nip
     ;
-: <communicative-frame> ( focusable-child -- frame )
-    1 2 communicative-frame new-frame
-    { 0 0 } >>filled-cell
-    swap { 0 0 } grid-add
-    "99" <label>
+: <communicative-frame> ( focusable-child model -- frame )
+    1 2 communicative-frame new-frame { 0 0 } >>filled-cell
+    swap <label-control>
     global-font-size get over font>> size<<
     { 0 1 } grid-add
+    swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- file-observer
 TUPLE: file-observer path model dirty
@@ -188,16 +187,16 @@ set-gestures
 : read-options ( -- ) ! #### stub
     16 global-font-size set
     ;
-
-USE: see ! ####
-
 : make-outline-manager ( -- labeled-gadget )
     read-options
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table> dup outline-pointer set
     <item-editor> set-font-sizes >>editor-gadget
-    outline-file get path>> normalize-path <labeled-gadget> set-font-sizes
-    <communicative-frame> ! ( first-child -- frame )
+    f <model> >>repeats
+    [ outline-file get path>> normalize-path <labeled-gadget> set-font-sizes ]
+    [ repeats>> [ [ number>string ] [ "" ] if* ] <arrow> ]
+    bi
+    <communicative-frame>
     ;
 : outline-manager ( -- )
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui

@@ -20,5 +20,3 @@ IN: outline-manager.tests
 
 USING: prettyprint
     ;
-
- ! class-of
