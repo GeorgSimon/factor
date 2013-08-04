@@ -96,22 +96,23 @@ set-gestures
     "item title editor" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table editor-gadget popup repeats
+TUPLE: outline-table < table editor-gadget popup { repeats model }
     ;
 : (handle-gesture) ( gesture outline-table handler -- f )
-    over repeats>> [ 1 ] unless*
+    over repeats>> value>> [ 1 ] unless*
     [ 2dup ( outline-table -- ) call-effect ] times
-    drop f swap repeats<< drop f
+    drop f swap repeats>> set-model drop f
     ;
-: update-repeats ( outline-table number -- outline-table )
-    swap [ [ 10 * + 100 mod ] when* ] change-repeats ! #### 100 as option ?
-    dup repeats>> . flush ! ####
+: update-repeats ( outline-table number -- )
+    swap repeats>> [ [ 10 * + 100 mod ] when* ] change-model
     ;
 : ?update-repeats ( gesture outline-table -- propagate-flag )
     swap gesture>string
-    dup "BACKSPACE" =
-    [ drop f >>repeats t ] [ string>number [ update-repeats f ] [ t ] if* ] if
-    nip ! outline-table
+    dup "BACKSPACE" = [
+        drop repeats>> f swap set-model f ! f = handled ! #### dip ?
+    ] [
+        string>number [ update-repeats f ] [ drop t ] if*
+    ] if
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-repeats ] if*
