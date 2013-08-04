@@ -208,7 +208,7 @@ set-gestures
             bi
             set-word-prop
             ]
-        [ drop "Syntax error :" write [ bl write ] each nl flush ]
+        [ drop "Syntax error :" write [ bl write ] each nl ]
         recover
         ]
     each
