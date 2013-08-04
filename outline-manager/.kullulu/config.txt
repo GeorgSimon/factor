@@ -1,0 +1,6 @@
+# Kommentare und Leerzeilen sind wirkungslos
+
+# Schlüssel     numerischerWert     beliebiger Text
+
+font-size       20
+save-interval
