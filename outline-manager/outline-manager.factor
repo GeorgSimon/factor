@@ -9,13 +9,14 @@ USING: accessors arrays calendar colors.constants combinators continuations
     math.rectangles models models.arrow namespaces sequences timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
-    ui.gadgets.line-support ui.gadgets.tables ui.gestures
-    ui.pens.solid
+    ui.gadgets.line-support ui.gadgets.tables ui.gestures ui.pens.solid
+    vectors
     ;
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
-SYMBOLS: outline-file outline-pointer save-interval
+SYMBOL: note-font-list
+SYMBOLS: outline-file outline-pointer save-interval user-font-size
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -25,18 +26,33 @@ SYMBOLS: outline-file outline-pointer save-interval
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
+! ------------------------------------------------- font-size management
+: note-font ( gadget -- gadget )
+    dup note-font-list [ get push ] [ drop [ 1vector ] dip set ] recover
+    ;
+: set-label-font-size ( size labeled-gadget -- size )
+    children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> over >>size drop
+    ;
+: set-font-size ( size gadget -- size )
+    [ font>> over >>size drop ]
+    [ [ parent>> set-label-font-size ] [ 2drop ] recover ]
+    bi
+    ;
+: set-noted ( font-size -- )
+    note-font-list get [ set-font-size ] each drop
+    ;
 ! ------------------------------------------------- arrow-frame
+! frame with a status bar displaying an arrow model
+! -------------------------------------------------
 TUPLE: arrow-frame < frame
     ;
 M: arrow-frame focusable-child* ( gadget -- child )
     children>> [ labeled-gadget? ] find nip
     ;
 : <arrow-frame> ( table title model quot -- frame )
-
-    <arrow> <label-control> { 1 1 } <border>
-
+    <arrow> <label-control> note-font { 1 1 } <border>
     [ <labeled-gadget> ] dip
-
     1 2 arrow-frame new-frame { 0 0 } >>filled-cell
     swap { 0 1 } grid-add swap { 0 0 } grid-add
     ;
@@ -84,7 +100,7 @@ H{
     }
 set-gestures
 : <item-editor> ( -- labeled-editor )
-    item-editor new-editor
+    item-editor new-editor note-font
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "item title editor" <labeled-gadget>
     ;
@@ -175,20 +191,22 @@ H{
 set-gestures
 
 : <outline-table> ( model renderer -- table )
-    outline-table new-table t >>selection-required? ! #### necessary?
+    outline-table new-table t >>selection-required?
     ;
 ! ------------------------------------------------- main
 : read-options ( -- ) ! #### stub
     2 save-interval set
+    16 user-font-size set
     ;
 : make-outline-manager ( -- arrow-frame )
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
-    trivial-renderer <outline-table> dup outline-pointer set
+    trivial-renderer <outline-table> note-font dup outline-pointer set
     <item-editor> >>editor-gadget                       ! table
     outline-file get path>> normalize-path              ! table title
     f <model> [ pick calls<< ] keep                     ! table title model
     [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
     <arrow-frame> ! ( table title model quot -- frame )
+    user-font-size get set-noted
     ;
 : outline-manager ( -- )
     read-options
