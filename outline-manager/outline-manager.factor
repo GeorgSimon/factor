@@ -44,7 +44,7 @@ M: communicative-frame focusable-child* ( gadget -- child )
     1 2 communicative-frame new-frame { 0 0 } >>filled-cell
     swap <label-control>
     global-font-size get over font>> size<<
-    { 0 1 } grid-add
+    { 1 1 } <border> { 0 1 } grid-add
     swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- file-observer
@@ -195,7 +195,7 @@ set-gestures
     <item-editor> set-font-sizes >>editor-gadget
     f <model> >>repeats
     [ outline-file get path>> normalize-path <labeled-gadget> set-font-sizes ]
-    [ repeats>> [ [ number>string ] [ "" ] if* ] <arrow> ]
+    [ repeats>> [ [ number>string "repeats : " prepend ] [ "" ] if* ] <arrow> ]
     bi
     <communicative-frame>
     ;
