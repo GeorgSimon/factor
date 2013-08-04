@@ -11,7 +11,7 @@ IN: outline-manager.tests
     ".kullulu/config.txt" <file-observer>
     [ get-data connections>> first path>> ] [ path>> ] bi
     ] unit-test
-{ { tuple rect gadget grid frame communicative-frame } } [
+{ { tuple rect gadget grid frame arrow-frame } } [
     make-outline-manager class-of superclasses
     ] unit-test
 { f } [
