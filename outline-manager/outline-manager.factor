@@ -4,9 +4,9 @@
 ! #### for development and debugging only :
 USING: classes nested-comments prettyprint
     ;
-USING: accessors arrays colors.constants combinators continuations
-    io io.backend io.encodings.utf8 io.files kernel
-    math math.parser math.rectangles models models.arrow namespaces sequences
+USING: accessors arrays calendar colors.constants combinators continuations
+    io io.backend io.encodings.utf8 io.files kernel math math.parser
+    math.rectangles models models.arrow namespaces sequences timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.tables ui.gestures
@@ -15,7 +15,8 @@ USING: accessors arrays colors.constants combinators continuations
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
-SYMBOLS: global-font-size outline-file outline-pointer ;
+SYMBOLS: global-font-size outline-file outline-pointer save-interval
+    ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
@@ -186,9 +187,9 @@ set-gestures
 ! ------------------------------------------------- main
 : read-options ( -- ) ! #### stub
     16 global-font-size set
+    2 save-interval set
     ;
 : make-outline-manager ( -- labeled-gadget )
-    read-options
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table> dup outline-pointer set
     <item-editor> set-font-sizes >>editor-gadget
@@ -199,6 +200,8 @@ set-gestures
     <communicative-frame>
     ;
 : outline-manager ( -- )
+    read-options
+    [ save-all-data ] save-interval get minutes delayed-every start-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
