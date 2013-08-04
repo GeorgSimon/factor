@@ -15,39 +15,29 @@ USING: accessors arrays calendar colors.constants combinators continuations
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
-SYMBOLS: global-font-size outline-file outline-pointer save-interval
+SYMBOLS: outline-file outline-pointer save-interval
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
     [ message>> ] [ drop ] recover
     ;
-: set-label-font-size ( size labeled-gadget -- )
-    children>> [ border? ] find nip children>> [ label? ] find nip
-    font>> size<<
-    ;
-: set-font-sizes ( labeled-gadget -- labeled-gadget' ) ! #### use change-font ?
-    global-font-size get swap
-    2dup content>> font>> size<<
-    [ set-label-font-size ] keep
-    ;
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
     ;
-! ------------------------------------------------- communicative-frame
-TUPLE: communicative-frame < frame
+! ------------------------------------------------- arrow-frame
+TUPLE: arrow-frame < frame
     ;
-M: communicative-frame focusable-child* ( gadget -- child )
+M: arrow-frame focusable-child* ( gadget -- child )
     children>> [ labeled-gadget? ] find nip
     ;
-: <communicative-frame> ( table title -- frame )
+: <arrow-frame> ( table title model quot -- frame )
 
-    over calls>> [ [ number>string "calls : " prepend ] [ "" ] if* ] <arrow>
-    <label-control> global-font-size get over font>> size<< { 1 1 } <border>
+    <arrow> <label-control> { 1 1 } <border>
 
-    [ <labeled-gadget> set-font-sizes ] dip
+    [ <labeled-gadget> ] dip
 
-    1 2 communicative-frame new-frame { 0 0 } >>filled-cell
+    1 2 arrow-frame new-frame { 0 0 } >>filled-cell
     swap { 0 1 } grid-add swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- file-observer
@@ -189,15 +179,16 @@ set-gestures
     ;
 ! ------------------------------------------------- main
 : read-options ( -- ) ! #### stub
-    16 global-font-size set
     2 save-interval set
     ;
-: make-outline-manager ( -- labeled-gadget )
+: make-outline-manager ( -- arrow-frame )
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table> dup outline-pointer set
-    <item-editor> set-font-sizes >>editor-gadget
-    f <model> >>calls
-    outline-file get path>> normalize-path <communicative-frame>
+    <item-editor> >>editor-gadget                       ! table
+    outline-file get path>> normalize-path              ! table title
+    f <model> [ pick calls<< ] keep                     ! table title model
+    [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
+    <arrow-frame> ! ( table title model quot -- frame )
     ;
 : outline-manager ( -- )
     read-options
