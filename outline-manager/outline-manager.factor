@@ -40,12 +40,15 @@ TUPLE: communicative-frame < frame
 M: communicative-frame focusable-child* ( gadget -- child )
     children>> [ labeled-gadget? ] find nip
     ;
-: <communicative-frame> ( focusable-child model -- frame )
+: <communicative-frame> ( table title -- frame )
+
+    over calls>> [ [ number>string "calls : " prepend ] [ "" ] if* ] <arrow>
+    <label-control> global-font-size get over font>> size<< { 1 1 } <border>
+
+    [ <labeled-gadget> set-font-sizes ] dip
+
     1 2 communicative-frame new-frame { 0 0 } >>filled-cell
-    swap <label-control>
-    global-font-size get over font>> size<<
-    { 1 1 } <border> { 0 1 } grid-add
-    swap { 0 0 } grid-add
+    swap { 0 1 } grid-add swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- file-observer
 TUPLE: file-observer path model dirty
@@ -194,10 +197,7 @@ set-gestures
     trivial-renderer <outline-table> dup outline-pointer set
     <item-editor> set-font-sizes >>editor-gadget
     f <model> >>calls
-    [ outline-file get path>> normalize-path <labeled-gadget> set-font-sizes ]
-    [ calls>> [ [ number>string "calls : " prepend ] [ "" ] if* ] <arrow> ]
-    bi
-    <communicative-frame>
+    outline-file get path>> normalize-path <communicative-frame>
     ;
 : outline-manager ( -- )
     read-options

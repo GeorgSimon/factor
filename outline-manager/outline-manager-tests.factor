@@ -15,7 +15,7 @@ IN: outline-manager.tests
     make-outline-manager class-of superclasses
     ] unit-test
 { f } [
-    make-outline-manager focusable-child* content>> repeats>> value>>
+    make-outline-manager focusable-child* content>> calls>> value>>
     ] unit-test
 
 USING: prettyprint
