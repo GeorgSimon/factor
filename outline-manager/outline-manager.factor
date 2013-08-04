@@ -96,26 +96,26 @@ set-gestures
     "item title editor" <labeled-gadget>
     ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table editor-gadget popup { repeats model }
+TUPLE: outline-table < table editor-gadget popup { calls model }
     ;
 : (handle-gesture) ( gesture outline-table handler -- f )
-    over repeats>> value>> [ 1 ] unless*
+    over calls>> value>> [ 1 ] unless*
     [ 2dup ( outline-table -- ) call-effect ] times
-    drop f swap repeats>> set-model drop f
+    drop f swap calls>> set-model drop f
     ;
-: update-repeats ( outline-table number -- )
-    swap repeats>> [ [ 10 * + 100 mod ] when* ] change-model
+: update-calls ( outline-table number -- )
+    swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
     ;
-: ?update-repeats ( gesture outline-table -- propagate-flag )
+: ?update-calls ( gesture outline-table -- propagate-flag )
     swap gesture>string
     dup "BACKSPACE" = [
-        drop repeats>> f swap set-model f ! f = handled ! #### dip ?
+        drop calls>> f swap set-model f ! f = handled ! #### dip ?
     ] [
-        string>number [ update-repeats f ] [ drop t ] if*
+        string>number [ update-calls f ] [ drop t ] if*
     ] if
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
-    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-repeats ] if*
+    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
 : (archive) ( table object -- )
     "Object to archive : " write . flush ! ####
@@ -193,9 +193,9 @@ set-gestures
     "outline.txt" <file-observer> [ outline-file set ] [ get-data ] bi
     trivial-renderer <outline-table> dup outline-pointer set
     <item-editor> set-font-sizes >>editor-gadget
-    f <model> >>repeats
+    f <model> >>calls
     [ outline-file get path>> normalize-path <labeled-gadget> set-font-sizes ]
-    [ repeats>> [ [ number>string "repeats : " prepend ] [ "" ] if* ] <arrow> ]
+    [ calls>> [ [ number>string "calls : " prepend ] [ "" ] if* ] <arrow> ]
     bi
     <communicative-frame>
     ;
