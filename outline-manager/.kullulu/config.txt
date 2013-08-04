@@ -2,5 +2,5 @@
 
 # Schlüssel     numerischerWert     beliebiger Text
 
-font-size       20
-save-interval
+font-size       16
+save-interval   2 Minuten

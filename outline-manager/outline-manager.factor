@@ -198,8 +198,7 @@ set-gestures
     ;
 ! ------------------------------------------------- main
 : read-options ( -- )
-    options  2 "save-interval" set-word-prop
-    options 16 "font-size" set-word-prop
+!    options 16 "font-size" set-word-prop
     ".kullulu/config.txt" home prepend-path fetch-lines
     [ empty? not ] filter [ first CHAR: # = not ] filter lines>words
     [   [   options swap
@@ -224,12 +223,15 @@ set-gestures
     f <model> [ pick calls<< ] keep                     ! table title model
     [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
     <arrow-frame> ! ( table title model quot -- frame )
-    options "font-size" word-prop set-noted
+    options "font-size" word-prop [ set-noted ] when*
     ;
 : outline-manager ( -- )
     read-options
-    [ save-all-data ] options "save-interval" word-prop minutes delayed-every
-    start-timer
+    options "save-interval" word-prop
+    [ minutes [ save-all-data ] swap delayed-every start-timer ]
+    [ "Option save-interval not found." write bl
+      "Periodical data saving switched off." print flush ]
+    if*
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
