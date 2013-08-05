@@ -5,13 +5,14 @@
 USING: classes nested-comments ;
 
 USING: accessors arrays assocs
-    calendar colors.constants combinators continuations
-    hashtables io io.backend io.encodings.utf8 io.files io.pathnames
+    calendar colors.constants combinators continuations fonts
+    hashtables io io.backend io.encodings.utf8 io.files io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow
     namespaces prettyprint sequences splitting timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
-    ui.gadgets.line-support ui.gadgets.tables ui.gestures ui.pens.solid
+    ui.gadgets.line-support ui.gadgets.panes ui.gadgets.tables
+    ui.gestures ui.pens.solid
     vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -130,7 +131,7 @@ M: file-observer model-changed ( model observer -- )
     utf8 set-file-lines
     ; inline
 : save-data ( file-observer-object -- )
-    dup dirty>> [ (save-data) ] [ drop ] if
+    dup dirty>> [ f >>dirty (save-data) ] [ drop ] if
     ;
 : <file-observer> ( path lines> >lines -- file-observer-object )
     file-observer new swap >>>lines swap >>lines> swap >>path
@@ -161,8 +162,20 @@ set-gestures
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "item title editor" <labeled-gadget>
     ;
+! ------------------------------------------------- display-pane
+TUPLE: display-pane < pane font
+    ;
+display-pane
+H{
+    { T{ key-down { sym "F1" } }   [ close-window ] }
+    }
+set-gestures
+: <display-pane> ( -- display-pane )
+    f display-pane new-pane
+    sans-serif-font >>font ! dummy font to be used by set-font-size
+    ;
 ! ------------------------------------------------- outline-table
-TUPLE: outline-table < table editor-gadget popup { calls model }
+TUPLE: outline-table < table { calls model } manual-gadget popup editor-gadget
     ;
 : (handle-gesture) ( gesture outline-table handler -- f )
     over calls>> value>> [ 1 ] unless*
@@ -177,14 +190,16 @@ TUPLE: outline-table < table editor-gadget popup { calls model }
     dup "BACKSPACE" = [
         drop calls>> f swap set-model f ! f = handled ! #### dip ?
     ] [
-        string>number [ update-calls f ] [ drop t ] if*
+        dup string>number [ nip update-calls f ]
+        [ [ "Not a command key :" i18n write bl print flush ] when* drop t ]
+        if*
     ] if
     ;
 M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
 : (archive) ( table object -- )
-    "Line to archive :" i18n write bl first . flush ! ####
+    "Line to archive :" write bl first . flush ! ####
     dup [ selection-index>> value>> dup ] [ model>> ] bi
     [ remove-nth ] change-model
     select-row
@@ -209,11 +224,10 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
 : move-up ( table -- )
     dup selection-index>> value>> dup 0 > -1 (?move)
     ;
-: selection-rect ( table -- rectangle )
-    [ [ line-height ] [ target-index ] bi * 0 swap ]
-    [ [ total-width>> ] [ line-height ] bi 2 + ]
-    bi
-    [ 2array ] 2bi@ <rect>
+: open-manual ( table -- )
+    manual-gadget>> dup "Outline Manager" open-window
+    content>> [ <pane-stream> ] [ font>> size>> ] bi font-size associate
+    [ [ "class-of . flush" print ] with-style ] curry with-output-stream
     ;
 : init-editor ( editor -- )
     dup control-value first empty?
@@ -226,6 +240,12 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
         { 0 0 } swap mark>> set-model
         ]
     if
+    ;
+: selection-rect ( table -- rectangle )
+    [ [ line-height ] [ target-index ] bi * 0 swap ]
+    [ [ total-width>> ] [ line-height ] bi 2 + ]
+    bi
+    [ 2array ] 2bi@ <rect>
     ;
 : pop-editor ( table -- )
     dup editor-gadget>> dup content>> init-editor
@@ -240,6 +260,7 @@ H{
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
     { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym "F1" } }                    [ open-manual ] }
     { T{ key-down { sym " " } }                     [ pop-editor ] }
     }
 set-gestures
@@ -286,9 +307,12 @@ set-gestures
     trivial-renderer <outline-table> note-font
     dup outline-pointer set
     <item-editor> >>editor-gadget
-    swap normalize-path                                 ! table title
-    f <model> [ pick calls<< ] keep                     ! table title model
-    [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
+    <display-pane> note-font "Manual" i18n <labeled-gadget> >>manual-gadget
+    swap normalize-path
+    f <model> [ pick calls<< ] keep
+    [   [ number>string " " prepend "count of calls :" i18n prepend ]
+        [ "Quit : Esc    Manual : F1" i18n ]
+        if* ]
     <arrow-frame> ! ( table title model quot -- frame )
     options "font-size" word-prop [ set-noted ] when*
     ; inline

@@ -3,17 +3,9 @@
 
 # Schlüssel         Wert    beliebiger Text
 
-"font-size"         "16"
-"height"
-"widht"
+"font-size"         " 16"
 
-"save-interval"     " 2"    Minuten
+"width"             "400"   Pixel
+"height"            "600"   Pixel
 
-
-
-
-
-keine Anführungszeichen
-
-"Wert fehlt"
-"Schlüssel"         "nicht numerisch"
+"save-interval"     "  2"   Minuten

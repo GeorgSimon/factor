@@ -1,3 +1,24 @@
 
+No such file or directory
+Weder Datei noch Verzeichnis
+
+Manual
+Handbuch
+
 No movement possible
 Keine Verschiebung möglich
+
+No translation found for following text line :
+Keine Übersetzung gefunden für folgende Textzeile :
+
+count of calls :
+Anzahl der Aufrufe :
+
+Quit : Esc    Manual : F1
+Beenden : Esc    Handbuch : F1
+
+Not a command key :
+Keine Befehlstaste :
+
+A template will be inserted into the translation table.
+Ein Eintragsmuster wird in die Übersetzungstabelle eingefügt.
