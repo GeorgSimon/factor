@@ -3,7 +3,14 @@
 # Schlüssel         Wert    beliebiger Text
 
 "font-size"         "16"
-"save-interval"     " 2"    Minuten
+"height"
+"widht"
+
+"save-interval"     " .2"    Minuten
+
+
+
+
 
 keine Anführungszeichen
 

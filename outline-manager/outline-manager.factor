@@ -16,7 +16,14 @@ USING: accessors arrays calendar colors.constants combinators continuations
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
-SYMBOLS: file-observers note-font-list options outline-pointer
+SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
+    ;
+! ------------------------------------------------- i18n
+: init-i18n ( model -- )
+    i18n-pointer set i18n-pointer get value>> . flush
+    ;
+: i18n ( string -- translated )
+    "No translation found for the following string :" print dup print nl flush
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -28,11 +35,11 @@ SYMBOLS: file-observers note-font-list options outline-pointer
     ;
 : fetch-lines ( path -- lines )
     [ utf8 file-lines ]
-    [ error>message write " : " write normalize-path print flush { } ]
+    [ error>message i18n write " : " write normalize-path print flush { } ]
     recover
     ;
-: lines>strings ( lines -- arrayArray )
-    [ "\"" split [ [ 32 = ] trim ] map [ empty? not ] filter ] map
+: line>strings ( line -- array )
+    "\"" split [ [ 32 = ] trim ] map [ empty? not ] filter
     ;
 ! ------------------------------------------------- font-size management
 : note-font ( gadget -- gadget )
@@ -65,25 +72,30 @@ M: arrow-frame focusable-child* ( gadget -- child )
     swap { 0 1 } grid-add swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- file-observer
-TUPLE: file-observer path model dirty
+TUPLE: file-observer path model dirty lines> >lines
     ;
 M: file-observer model-changed ( model observer -- )
     nip t swap dirty<<
     ;
-: read-file ( path -- model )
-    path>> fetch-lines [ 1array ] map <model> 
+: read-file ( file-observer-object -- model )
+    [ path>> fetch-lines ] [ lines>>> ] bi call( lines -- value ) <model> 
     ; inline
 : get-data ( file-observer-object -- model )
     [ read-file dup ] [ model<< ] [ over add-connection ] tri
     ;
 : (save-data) ( file-observer-object -- )
-    [ model>> value>> [ first ] map ] [ path>> ] bi utf8 set-file-lines
+    [ model>> value>> ] [ >lines>> call( value -- lines ) ] [ path>> ] tri
+    utf8 set-file-lines
     ; inline
 : save-data ( file-observer-object -- )
     dup dirty>> [ (save-data) ] [ drop ] if
     ;
-: <file-observer> ( path -- file-observer-object )
-    file-observer new swap >>path
+: <file-observer> ( path lines> >lines -- file-observer-object )
+    file-observer new swap >>>lines swap >>lines> swap >>path
+    ;
+: save-all-data ( -- ) ! to be called when finishing and periodically too
+    file-observers get [ save-data ] each
+    file-observers get [ path>> . ] each flush ! ####
     ;
 ! ------------------------------------------------- item-editor
 TUPLE: item-editor < editor
@@ -140,9 +152,6 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     dup (selected-row)
     [ (archive) ] [ 2drop "No item selected" print flush ] if
     ;
-: save-all-data ( -- ) ! to be called periodically too
-    file-observers get [ save-data ] each
-    ;
 : finish-manager ( gadget -- )
     save-all-data close-window
     ; inline
@@ -198,18 +207,21 @@ set-gestures
     outline-table new-table t >>selection-required?
     ;
 ! ------------------------------------------------- main
+: process-option ( array -- )
+    line>strings
+    [   options swap [ second string>number ] [ first ] bi
+        over number>string over write bl print
+        set-word-prop
+        ]
+    [   drop "Syntax error :" write [ bl write ] each nl
+        ]
+    recover
+    ;
 : read-options ( -- )
     ".kullulu/config.txt" home prepend-path fetch-lines
-    [ empty? not ] filter [ first CHAR: # = not ] filter lines>strings
-    [   [   options swap [ second string>number ] [ first ] bi
-            over number>string over write bl print
-            set-word-prop
-            ]
-        [   drop "Syntax error :" write [ bl write ] each nl
-            ]
-        recover
-        ]
-    each
+    [ empty? not ] filter
+    [ first CHAR: # = not ] filter
+    [ process-option ] each
     nl flush
     ;
 : init-timer ( -- )
@@ -220,8 +232,9 @@ set-gestures
     if*
     ;
 : make-outline-manager ( -- arrow-frame )
-    "outline.txt" <file-observer>                       ! observer
-    [ path>> ] [ 1vector file-observers set ] [ get-data ] tri
+    ! <file-observer> ( path lines> >lines -- file-observer-object )
+    "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
+    [ path>> ] [ file-observers get push ] [ get-data ] tri
     trivial-renderer <outline-table> note-font
     dup outline-pointer set
     <item-editor> >>editor-gadget
@@ -232,6 +245,12 @@ set-gestures
     options "font-size" word-prop [ set-noted ] when*
     ;
 : outline-manager ( -- )
+    V{ } clone file-observers set
+
+    ".kullulu/translations.txt" [ ] [ ] <file-observer>
+    [ file-observers get push ] [ get-data ] bi
+    init-i18n
+
     read-options init-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
