@@ -2,7 +2,7 @@
 ! See http://factorcode.org/license.txt for BSD license.
 ! #### = todo
 ! #### for development and debugging only :
-! USING: classes nested-comments ;
+USING: classes nested-comments ;
 
 USING: accessors arrays calendar colors.constants combinators continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
@@ -31,7 +31,8 @@ SYMBOLS: file-observers note-font-list options outline-pointer
     [ error>message write " : " write normalize-path print flush { } ]
     recover
     ;
-: lines>words ( lines -- arrayArray ) [ " " split [ empty? not ] filter ] map
+: lines>strings ( lines -- arrayArray )
+    [ "\"" split [ [ 32 = ] trim ] map [ empty? not ] filter ] map
     ;
 ! ------------------------------------------------- font-size management
 : note-font ( gadget -- gadget )
@@ -199,18 +200,24 @@ set-gestures
 ! ------------------------------------------------- main
 : read-options ( -- )
     ".kullulu/config.txt" home prepend-path fetch-lines
-    [ empty? not ] filter [ first CHAR: # = not ] filter lines>words
-    [   [   options swap
-            [ second string>number dup number>string write ]
-            [ first dup bl print ]
-            bi
+    [ empty? not ] filter [ first CHAR: # = not ] filter lines>strings
+    [   [   options swap [ second string>number ] [ first ] bi
+            over number>string over write bl print
             set-word-prop
             ]
-        [ drop "Syntax error :" write [ bl write ] each nl ]
+        [   drop "Syntax error :" write [ bl write ] each nl
+            ]
         recover
         ]
     each
-    flush
+    nl flush
+    ;
+: init-timer ( -- )
+    "save-interval" options over word-prop
+    [ minutes [ save-all-data ] swap delayed-every start-timer drop ]
+    [   "Option \"" write write
+        "\" not found. Data will not be saved periodically." print flush ]
+    if*
     ;
 : make-outline-manager ( -- arrow-frame )
     "outline.txt" <file-observer>                       ! observer
@@ -225,12 +232,7 @@ set-gestures
     options "font-size" word-prop [ set-noted ] when*
     ;
 : outline-manager ( -- )
-    read-options
-    options "save-interval" word-prop
-    [ minutes [ save-all-data ] swap delayed-every start-timer ]
-    [ "Option save-interval not found." write bl
-      "Periodical data saving switched off." print flush ]
-    if*
+    read-options init-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager

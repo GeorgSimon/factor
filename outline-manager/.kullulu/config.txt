@@ -1,6 +1,11 @@
 # Kommentare und Leerzeilen sind wirkungslos
 
-# Schlüssel     numerischerWert     beliebiger Text
+# Schlüssel         Wert    beliebiger Text
 
-font-size       16
-save-interval   2 Minuten
+"font-size"         "16"
+"save-interval"     " 2"    Minuten
+
+keine Anführungszeichen
+
+"Wert fehlt"
+"Schlüssel"         "nicht numerisch"
