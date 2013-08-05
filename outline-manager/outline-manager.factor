@@ -4,8 +4,9 @@
 ! #### for development and debugging only :
 USING: classes nested-comments ;
 
-USING: accessors arrays calendar colors.constants combinators continuations
-    io io.backend io.encodings.utf8 io.files io.pathnames
+USING: accessors arrays assocs
+    calendar colors.constants combinators continuations
+    hashtables io io.backend io.encodings.utf8 io.files io.pathnames
     kernel math math.parser math.rectangles models models.arrow
     namespaces prettyprint sequences splitting timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
@@ -19,11 +20,21 @@ IN: outline-manager
 SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     ;
 ! ------------------------------------------------- i18n
-: init-i18n ( model -- )
-    i18n-pointer set i18n-pointer get value>> . flush
+: i18n-hashtable ( -- hashtable )
+    i18n-pointer get value>>
     ;
+: (i18n) ( string hashtable -- translated )
+    ?at [
+        "No translation found for following text line :"
+        i18n-hashtable ?at drop print dup print
+        "A template will be inserted into the translation table."
+        i18n-hashtable ?at drop print nl flush
+        i18n-pointer get [ [ dup dup ] dip ?set-at ] change-model
+    ] unless
+    ; inline
 : i18n ( string -- translated )
-    "No translation found for the following string :" print dup print nl flush
+    [ i18n-hashtable (i18n) ]
+    [ drop "i18n not initialized" print flush ] recover
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -40,6 +51,37 @@ SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     ;
 : line>strings ( line -- array )
     "\"" split [ [ 32 = ] trim ] map [ empty? not ] filter
+    ;
+: report-discarded ( line number -- )
+    "Line" write bl number>string write bl "discarded :" print
+    print nl flush
+    ;
+: lines>hash ( lines -- hash )
+    0 swap
+    [   over
+        [                                           ! count line count
+            {   [ empty? [ f ] [ 1 + t ] if ]
+                [ drop 1 + t ]
+                [ dup empty? [ 2drop 0 ] [ 2 report-discarded 1 + ] if f ]
+                }
+            nth
+            call( count line -- count flag )
+            ]
+        [                                           ! count line count error
+            drop over empty? [
+                3drop 0
+            ] [
+                report-discarded
+                1 +
+            ] if
+            f
+            ]
+        recover
+        ]
+    filter
+    swap 1 =
+    [ dup last [ suffix ] keep "Line 2 appended :" print print nl flush ] when
+    f swap [ drop not dup ] partition [ 2array ] 2map >hashtable nip
     ;
 ! ------------------------------------------------- font-size management
 : note-font ( gadget -- gadget )
@@ -80,7 +122,7 @@ M: file-observer model-changed ( model observer -- )
 : read-file ( file-observer-object -- model )
     [ path>> fetch-lines ] [ lines>>> ] bi call( lines -- value ) <model> 
     ; inline
-: get-data ( file-observer-object -- model )
+: get-model ( file-observer-object -- model )
     [ read-file dup ] [ model<< ] [ over add-connection ] tri
     ;
 : (save-data) ( file-observer-object -- )
@@ -95,7 +137,6 @@ M: file-observer model-changed ( model observer -- )
     ;
 : save-all-data ( -- ) ! to be called when finishing and periodically too
     file-observers get [ save-data ] each
-    file-observers get [ path>> . ] each flush ! ####
     ;
 ! ------------------------------------------------- item-editor
 TUPLE: item-editor < editor
@@ -143,14 +184,14 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
 : (archive) ( table object -- )
-    "Line to archive : " write first . flush ! ####
+    "Line to archive :" i18n write bl first . flush ! ####
     dup [ selection-index>> value>> dup ] [ model>> ] bi
     [ remove-nth ] change-model
     select-row
     ; inline
 : archive ( table -- )
     dup (selected-row)
-    [ (archive) ] [ 2drop "No item selected" print flush ] if
+    [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
     ;
 : finish-manager ( gadget -- )
     save-all-data close-window
@@ -158,7 +199,7 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
 : (?move) ( table index flag direction -- )
     swap
     [ over + rot model>> [ [ exchange ] keep ] change-model ]
-    [ 3drop "No movement possible" print flush ]
+    [ 3drop "No movement possible" i18n print flush ]
     if
     ;
 : move-down ( table -- )
@@ -217,24 +258,31 @@ set-gestures
         ]
     recover
     ;
+: discard-comments ( lines -- lines' )
+    [ ?first CHAR: # = not ] filter
+    ;
+: init-i18n ( -- )
+    ".kullulu/translations.txt" home prepend-path
+    [ discard-comments lines>hash ]
+    [ [ [ "" ] 2dip 3array ] { } assoc>map concat ]
+    <file-observer>
+    [ file-observers get push ] [ get-model ] bi i18n-pointer set
+    ; inline
 : read-options ( -- )
     ".kullulu/config.txt" home prepend-path fetch-lines
-    [ empty? not ] filter
-    [ first CHAR: # = not ] filter
-    [ process-option ] each
-    nl flush
-    ;
+    [ empty? not ] filter discard-comments
+    [ process-option ] each nl flush
+    ; inline
 : init-timer ( -- )
     "save-interval" options over word-prop
     [ minutes [ save-all-data ] swap delayed-every start-timer drop ]
     [   "Option \"" write write
         "\" not found. Data will not be saved periodically." print flush ]
     if*
-    ;
+    ; inline
 : make-outline-manager ( -- arrow-frame )
-    ! <file-observer> ( path lines> >lines -- file-observer-object )
     "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
-    [ path>> ] [ file-observers get push ] [ get-data ] tri
+    [ path>> ] [ file-observers get push ] [ get-model ] tri
     trivial-renderer <outline-table> note-font
     dup outline-pointer set
     <item-editor> >>editor-gadget
@@ -243,15 +291,9 @@ set-gestures
     [ [ number>string "calls : " prepend ] [ "" ] if* ] ! table title model qu
     <arrow-frame> ! ( table title model quot -- frame )
     options "font-size" word-prop [ set-noted ] when*
-    ;
+    ; inline
 : outline-manager ( -- )
-    V{ } clone file-observers set
-
-    ".kullulu/translations.txt" [ ] [ ] <file-observer>
-    [ file-observers get push ] [ get-data ] bi
-    init-i18n
-
-    read-options init-timer
+    V{ } clone file-observers set init-i18n read-options init-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager
