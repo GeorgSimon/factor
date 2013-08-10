@@ -52,8 +52,8 @@ SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     [ error>message i18n write " : " write normalize-path print flush { } ]
     recover
     ;
-: line>strings ( line -- array )
-    "\"" split [ [ 32 = ] trim ] map [ empty? not ] filter
+: line>words ( line -- array )
+    " " split [ empty? not ] filter
     ;
 : report-discarded ( line number -- )
     "Line" write bl number>string write bl "discarded :" print
@@ -332,7 +332,7 @@ set-gestures
     ;
 ! ------------------------------------------------- configuration
 : process-option ( array -- )
-    line>strings
+    line>words
     [   options swap [ second string>number ] [ first ] bi
         over number>string over write bl print
         set-word-prop
