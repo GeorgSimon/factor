@@ -6,22 +6,24 @@ USING: classes nested-comments ;
 
 USING: accessors arrays assocs
     calendar colors.constants combinators continuations fonts
-    hashtables io io.backend io.encodings.utf8 io.files io.pathnames io.styles
+    hashtables help.markup help.stylesheet help.syntax
+    io io.backend io.encodings.utf8 io.files io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow
-    namespaces prettyprint sequences splitting timers
-    ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
+    namespaces prettyprint sequences splitting timers ui ui.gadgets
+    ui.gadgets.books ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.panes ui.gadgets.tables
     ui.gestures ui.pens.solid
     vectors words
     ;
+! #### FROM: assocs => change-at ; ! to clear ambiguity
 FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager
 ! -------------------------------------------------
 SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     ;
 ! ------------------------------------------------- i18n
-: i18n-hashtable ( -- hashtable )
+: i18n-hashtable ( -- hashtable ) ! or error
     i18n-pointer get value>>
     ;
 : (i18n) ( string hashtable -- translated )
@@ -84,38 +86,17 @@ SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     [ dup last [ suffix ] keep "Line 2 appended :" print print nl flush ] when
     f swap [ drop not dup ] partition [ 2array ] 2map >hashtable nip
     ;
-! ------------------------------------------------- font-size management
-: note-font ( gadget -- gadget )
-    dup note-font-list [ get push ] [ drop [ 1vector ] dip set ] recover
+: lines>element ( lines -- element )
+    [ [ { $nl } ] when-empty ] map
     ;
-: set-label-font-size ( size labeled-gadget -- size )
-    children>> [ border? ] find nip children>> [ label? ] find nip
-    font>> over >>size drop
-    ;
-: set-font-size ( size gadget -- size )
-    [ font>> over >>size drop ]
-    [ [ parent>> set-label-font-size ] [ 2drop ] recover ]
-    bi
-    ;
-: set-noted ( font-size -- )
-    note-font-list get [ set-font-size ] each drop
-    ;
-! ------------------------------------------------- arrow-frame
-! frame with a status bar displaying an arrow model
-! -------------------------------------------------
-TUPLE: arrow-frame < frame
-    ;
-M: arrow-frame focusable-child* ( gadget -- child )
-    children>> [ labeled-gadget? ] find nip
-    ;
-: <arrow-frame> ( table title model quot -- frame )
-    <arrow> <label-control> note-font { 1 1 } <border>
-    [ <labeled-gadget> ] dip
-    1 2 arrow-frame new-frame { 0 0 } >>filled-cell
-    swap { 0 1 } grid-add swap { 0 0 } grid-add
+: config-path ( filename -- path )
+    ".kullulu" prepend-path home prepend-path
     ;
 ! ------------------------------------------------- file-observer
-TUPLE: file-observer path model dirty lines> >lines
+! initializes model from path using lines>
+! flushes model to path using >line if dirty
+! -------------------------------------------------
+TUPLE: file-observer path model lines> >lines dirty
     ;
 M: file-observer model-changed ( model observer -- )
     nip t swap dirty<<
@@ -123,7 +104,7 @@ M: file-observer model-changed ( model observer -- )
 : read-file ( file-observer-object -- model )
     [ path>> fetch-lines ] [ lines>>> ] bi call( lines -- value ) <model> 
     ; inline
-: get-model ( file-observer-object -- model )
+: init-model ( file-observer-object -- model )
     [ read-file dup ] [ model<< ] [ over add-connection ] tri
     ;
 : (save-data) ( file-observer-object -- )
@@ -135,19 +116,61 @@ M: file-observer model-changed ( model observer -- )
     ;
 : <file-observer> ( path lines> >lines -- file-observer-object )
     file-observer new swap >>>lines swap >>lines> swap >>path
+    dup file-observers [ ?push ] change
     ;
-: save-all-data ( -- ) ! to be called when finishing and periodically too
+: save-all-data ( -- ) ! to be called when finishing and also periodically
     file-observers get [ save-data ] each
+    ;
+! ------------------------------------------------- font-size management
+: note-to-font-list ( object -- object )
+    dup note-font-list [ ?push ] change
+    ;
+: set-gadget-font-size ( size gadget -- size )
+    font>> over >>size drop
+    ;
+: set-label-font-size ( size content-gadget -- size )
+    parent>>
+    children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> over >>size drop
+    ;
+GENERIC: set-font-size ( size object -- size )
+
+: set-noted ( font-size -- )
+    note-font-list get [ set-font-size ] each drop
+    ;
+! ------------------------------------------------- arrow-frame
+! frame with a labeled-gadget and a status bar displaying an arrow model
+! -------------------------------------------------
+TUPLE: arrow-frame < frame
+    ;
+M: arrow-frame focusable-child* ( gadget -- child )
+    children>> [ labeled-gadget? ] find nip
+    ;
+TUPLE: display-control < label-control
+    ;
+M: display-control set-font-size ( size gadget -- size )
+    set-gadget-font-size
+    ;
+: <display-control> ( model -- display-control )
+    "" display-control new-label swap >>model ;
+: <arrow-frame> ( table title model quot -- frame )
+    <arrow> <display-control> note-to-font-list { 1 1 } <border>
+    [ <labeled-gadget> ] dip
+    1 2 arrow-frame new-frame { 0 0 } >>filled-cell
+    swap { 0 1 } grid-add swap { 0 0 } grid-add
     ;
 ! ------------------------------------------------- item-editor
 TUPLE: item-editor < editor
+    ;
+M: item-editor set-font-size ( size gadget -- size )
+    [ set-gadget-font-size ] [ set-label-font-size ] bi
     ;
 : jot ( editor -- )
     [   control-value                               ! new
         outline-pointer get                         ! new table
         [ target-index swap over ] [ model>> ] bi   ! index new index model
         [ insert-nth ] change-model                 ! index
-        outline-pointer get swap select-row
+        drop ! #### outline-pointer get swap select-row
         ]
     [ hide-glass ]
     bi
@@ -157,25 +180,66 @@ H{
     { T{ key-down { sym "RET" } }   [ jot ] }
     }
 set-gestures
+
 : <item-editor> ( -- labeled-editor )
-    item-editor new-editor note-font
+    item-editor new-editor note-to-font-list
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "item title editor" <labeled-gadget>
     ;
-! ------------------------------------------------- display-pane
-TUPLE: display-pane < pane font
+! ------------------------------------------------- manual
+TUPLE: manual < pane font stylesheet
     ;
-display-pane
+: update-stylesheet ( gadget -- )
+    [ font>> size>> ] keep              ! new-size gadget
+    [                                   ! new-size stylesheet
+        swap                            ! stylesheet new-size
+        default-span-style pick at      ! stylesheet new-size style
+        font-size swap                  ! stylesheet new-size key style
+        set-at                          ! stylesheet
+        ]                               ! gadget quotation
+    change-stylesheet                   ! gadget
+    drop
+    ;
+M: manual set-font-size ( size gadget -- size )
+    [ set-gadget-font-size ] [ update-stylesheet ] [ set-label-font-size ] tri
+    ;
+: manual-path ( filename -- path )
+    "manual" prepend-path config-path
+    ;
+M: manual model-changed ( model observer -- ) ! #### called by open-window ?
+    "manual=>model-changed has been called" print flush ! ####
+    dup stylesheet>>                                ! model observer stylesheet
+    [                                               ! model observer
+        [                                           ! model
+            [ value>> manual-path fetch-lines lines>element print-element ]
+            with-default-style
+            ]
+        with-pane
+        ]
+    with-variables
+    ;
+manual
 H{
-    { T{ key-down { sym "F1" } }   [ close-window ] }
+    { T{ key-down { sym "ESC" } }   [ close-window ] }
+    { T{ key-down { sym "F1" } }    [ close-window ] }
     }
 set-gestures
-: <display-pane> ( -- display-pane )
-    f display-pane new-pane
-    sans-serif-font >>font ! dummy font to be used by set-font-size
+
+: <manual> ( -- manual )
+    f manual new-pane
+    <font> "sans-serif" >>name >>font note-to-font-list
+    2 <hashtable> "sans-serif" font-name 22 font-size [ pick set-at ] 2bi@
+    default-span-style associate >>stylesheet
+    f <model> [ >>model ] [ "page0.txt" swap set-model ] bi
+    "initial connections :" print ! #### to be removed
+    dup model>> connections>> [ class-of . ] each flush ! #### to be removed
+    ! #### where are connections initialized ?
     ;
 ! ------------------------------------------------- outline-table
 TUPLE: outline-table < table { calls model } manual-gadget popup editor-gadget
+    ;
+M: outline-table set-font-size ( size gadget -- size )
+    [ set-gadget-font-size ] [ set-label-font-size ] bi
     ;
 : (handle-gesture) ( gesture outline-table handler -- f )
     over calls>> value>> [ 1 ] unless*
@@ -186,7 +250,7 @@ TUPLE: outline-table < table { calls model } manual-gadget popup editor-gadget
     swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
     ;
 : ?update-calls ( gesture outline-table -- propagate-flag )
-    swap gesture>string
+    swap gesture>string dup [ dup empty? [ not ] when ] when
     dup "BACKSPACE" = [
         drop calls>> f swap set-model f ! f = handled ! #### dip ?
     ] [
@@ -225,9 +289,7 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     dup selection-index>> value>> dup 0 > -1 (?move)
     ;
 : open-manual ( table -- )
-    manual-gadget>> dup "Outline Manager" open-window
-    content>> [ <pane-stream> ] [ font>> size>> ] bi font-size associate
-    [ [ "class-of . flush" print ] with-style ] curry with-output-stream
+    manual-gadget>> "Outline Manager" open-window
     ;
 : init-editor ( editor -- )
     dup control-value first empty?
@@ -266,9 +328,9 @@ H{
 set-gestures
 
 : <outline-table> ( model renderer -- table )
-    outline-table new-table t >>selection-required?
+    outline-table new-table t >>selection-required? note-to-font-list
     ;
-! ------------------------------------------------- main
+! ------------------------------------------------- configuration
 : process-option ( array -- )
     line>strings
     [   options swap [ second string>number ] [ first ] bi
@@ -283,17 +345,19 @@ set-gestures
     [ ?first CHAR: # = not ] filter
     ;
 : init-i18n ( -- )
-    ".kullulu/translations.txt" home prepend-path
+    "translations.txt" config-path
     [ discard-comments lines>hash ]
     [ [ [ "" ] 2dip 3array ] { } assoc>map concat ]
-    <file-observer>
-    [ file-observers get push ] [ get-model ] bi i18n-pointer set
+    <file-observer> init-model i18n-pointer set
     ; inline
 : read-options ( -- )
-    ".kullulu/config.txt" home prepend-path fetch-lines
+    "config.txt" config-path fetch-lines
     [ empty? not ] filter discard-comments
+    dup empty?
+    [ "No options found" i18n ] [ "Found options :" i18n ] if print nl flush
     [ process-option ] each nl flush
     ; inline
+! ------------------------------------------------- main
 : init-timer ( -- )
     "save-interval" options over word-prop
     [ minutes [ save-all-data ] swap delayed-every start-timer drop ]
@@ -301,23 +365,28 @@ set-gestures
         "\" not found. Data will not be saved periodically." print flush ]
     if*
     ; inline
-: make-outline-manager ( -- arrow-frame )
-    "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
-    [ path>> ] [ file-observers get push ] [ get-model ] tri
-    trivial-renderer <outline-table> note-font
-    dup outline-pointer set
+: make-outline-table ( model -- outline-table )
+    trivial-renderer <outline-table>
+    dup outline-pointer set ! so that item-editor can find it
     <item-editor> >>editor-gadget
-    <display-pane> note-font "Manual" i18n <labeled-gadget> >>manual-gadget
-    swap normalize-path
+    <manual> "Manual" i18n <labeled-gadget> >>manual-gadget
+    ; inline
+: make-arrow-frame ( outline-table title -- arrow-frame )
     f <model> [ pick calls<< ] keep
     [   [ number>string " " prepend "count of calls :" i18n prepend ]
         [ "Quit : Esc    Manual : F1" i18n ]
         if* ]
     <arrow-frame> ! ( table title model quot -- frame )
+    ; inline
+: make-outline-manager ( -- arrow-frame )
+    "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
+    [ init-model make-outline-table ] [ path>> normalize-path ] bi
+    make-arrow-frame
     options "font-size" word-prop [ set-noted ] when*
     ; inline
 : outline-manager ( -- )
-    V{ } clone file-observers set init-i18n read-options init-timer
+    file-observers off note-font-list off
+    init-i18n read-options init-timer
     make-outline-manager [ "Outline Manager" open-window ] curry with-ui
     ;
 MAIN: outline-manager

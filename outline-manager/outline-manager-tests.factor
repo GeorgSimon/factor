@@ -1,24 +1,44 @@
-! USE: outline-manager refresh-all "outline-manager" test
+USE: tools.test
 
-USING: accessors classes combinators kernel math.rectangles models
-    namespaces nested-comments outline-manager sequences tools.test
-    ui.gadgets ui.gadgets.borders ui.gadgets.frames ui.gadgets.grids
-    ui.gadgets.icons ui.gadgets.labeled
+USING: accessors arrays classes io.pathnames
+    math.rectangles models namespaces outline-manager sequences
+    ui.gadgets ui.gadgets.frames ui.gadgets.grids
     ;
+FROM: models => change-model ; ! to clear ambiguity
 IN: outline-manager.tests
 
-{ ".kullulu/config.txt" ".kullulu/config.txt" } [
-    ".kullulu/config.txt" [ ] [ ] <file-observer>
-    [ get-model connections>> first path>> ] [ path>> ] bi
-    ] unit-test
-{ { tuple rect gadget grid frame arrow-frame } } [
-    V{ } clone file-observers set
-    make-outline-manager class-of superclasses
-    ] unit-test
-{ f } [
-    V{ } clone file-observers set
-    make-outline-manager focusable-child* content>> calls>> value>>
-    ] unit-test
+USING: libc kernel
+    ;
+! "touch outline.txt" system drop
+
+! ------------------------------------------------- file-observer
+! TUPLE: file-observer path model lines> >lines dirty ;
+! initializes model from path using lines>
+! flushes model to path using >line if dirty
+! -------------------------------------------------
+
+{ array t } [
+file-observers off
+"outline.txt" [ ] [ ] <file-observer> init-model
+[ [ dup class-of swap ] change-model ]
+[ connections>> first dirty>> ]
+bi
+] unit-test
+
+! ------------------------------------------------- arrow-frame
+
+! ------------------------------------------------- main
+
+".kullulu/translations.txt" home prepend-path "outline.txt" 2array [
+file-observers off init-i18n make-outline-manager drop
+file-observers get [ path>> ] each
+] unit-test
+
+! ------------------------------------------------- sandbox
 
 USING: prettyprint
     ;
+
+
+
+! USE: outline-manager refresh-all "outline-manager" test
