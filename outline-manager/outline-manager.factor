@@ -5,7 +5,7 @@
 USING: classes nested-comments ;
 
 USING: accessors arrays assocs
-    calendar colors.constants combinators continuations fonts
+    calendar colors colors.constants combinators continuations fonts
     hashtables help.markup help.stylesheet help.syntax
     io io.backend io.encodings.utf8 io.files io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow
@@ -13,7 +13,7 @@ USING: accessors arrays assocs
     ui.gadgets.books ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.panes ui.gadgets.tables
-    ui.gestures ui.pens.solid
+    ui.gestures ui.pens.gradient ui.pens.solid
     vectors words
     ;
 ! #### FROM: assocs => change-at ; ! to clear ambiguity
@@ -88,6 +88,13 @@ SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     ;
 : lines>element ( lines -- element )
     ! [ [ { $nl } ] [ " " 2array ] if-empty ] map
+    ;
+: ?invalid. ( string/f -- )
+    [ "Not a command key :" i18n write bl print flush ] when*
+    ;
+: page-theme ( gadget -- )
+    { T{ rgba f 0.8 1.0 1.0 1.0 } T{ rgba f 0.8 0.8 1.0 1.0 } } <gradient>
+    >>interior drop
     ;
 : config-path ( filename -- path )
     ".kullulu" prepend-path home prepend-path
@@ -200,7 +207,7 @@ M: outline-table set-font-size ( size gadget -- size )
     ;
 : (handle-gesture) ( gesture outline-table handler -- f )
     over calls>> value>> [ 1 ] unless*
-    [ 2dup ( outline-table -- ) call-effect ] times
+    [ 2dup call( outline-table -- ) ] times
     drop f swap calls>> set-model drop f
     ;
 : update-calls ( outline-table number -- )
@@ -212,7 +219,7 @@ M: outline-table set-font-size ( size gadget -- size )
         drop calls>> f swap set-model f ! f = handled ! #### dip ?
     ] [
         dup string>number [ nip update-calls f ]
-        [ [ "Not a command key :" i18n write bl print flush ] when* drop t ]
+        [ ?invalid. drop t ]
         if*
     ] if
     ;
@@ -336,40 +343,55 @@ M: manual set-font-size ( size gadget -- size )
 : manual-path ( filename -- path )
     "manual" prepend-path config-path
     ;
-M: manual model-changed ( model observer -- ) ! #### called by open-window ?
-    "manual=>model-changed has been called" print flush ! ####
-    over value>>
-    over parent>>
+M: manual model-changed ( model observer -- ) ! also called by open-window
+    over value>> over parent>>
     children>> [ border? ] find nip children>> [ label? ] find nip
     text<<
     dup stylesheet>>                                ! model observer stylesheet
     [                                               ! model observer
         [                                           ! model
-            [ value>> manual-path parse-file >array print-element ]
+            [   value>> manual-path
+                [ parse-file >array ]
+                [ error>> error>message " : " rot 3array ]
+                recover
+                print-element ]
             with-default-style
             ]
         with-pane
         ]
     with-variables
     ;
-: close-manual ( gadget -- )
+: close-manual ( manual-gadget -- )
     f outline-pointer get manual-open?<<
     close-window
+    ;
+: switch ( manual-gadget filename -- )
+    swap model>> set-model
+    ;
+M: manual handle-gesture ( gesture manual -- ? )
+    2dup get-gesture-handler [
+        call( manual -- ) drop f
+    ] [
+        swap gesture>string dup string>number [
+            drop ".txt" append switch f
+        ] [
+            ?invalid. drop t
+        ] if*
+    ] if*
     ;
 manual
 H{
     { T{ key-down { sym "ESC" } }   [ close-manual ] }
     { T{ key-down { sym "F1" } }    [ close-manual ] }
+    { T{ key-down { sym " " } }     [ "editor.txt" switch ] }
     }
 set-gestures
 
 : <manual> ( -- manual )
-    f manual new-pane
+    f manual new-pane dup page-theme
     <font> "sans-serif" >>name >>font note-to-font-list
     manual-default clone >>stylesheet
     f <model> [ >>model ] [ "0.txt" swap set-model ] bi
-    "initial connections :" print ! #### to be removed
-    dup model>> connections>> [ class-of . ] each flush ! #### to be removed
     ! #### where are connections initialized ?
     ;
 ! ------------------------------------------------- configuration
