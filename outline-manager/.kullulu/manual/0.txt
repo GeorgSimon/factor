@@ -1,0 +1,17 @@
+USING: help.markup ;
+
+    { $heading "Wichtige Befehle" }
+    { $table { "a" "b" "c" } { "d" "e" "f" } }
+{ $nl }
+    { $heading "Listenverwaltung" }
+    "Die einfachste Anwendung ist die Listenverwaltung."
+{ $nl }
+    { $heading "Editor-Steuerung" }
+    "noch nicht implementiert"
+    { $table
+        { "Editor schließen ohne Speichern" "ESC" }
+        { "Speichern und über den neuen Eintrag zeigen" "S+RET" }
+        { "Speichern und unter den neuen Eintrag zeigen" "RET" }
+        { "Speichern, Editor schließen und über den neuen Eintrag zeigen" "UP" }
+        { "Speichern, Editor schließen und unter den neuen Eintrag zeigen" "DOWN" }
+        }

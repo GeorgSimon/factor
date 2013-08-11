@@ -9,7 +9,7 @@ USING: accessors arrays assocs
     hashtables help.markup help.stylesheet help.syntax
     io io.backend io.encodings.utf8 io.files io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow
-    namespaces prettyprint sequences splitting timers ui ui.gadgets
+    namespaces parser prettyprint sequences splitting timers ui ui.gadgets
     ui.gadgets.books ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.line-support ui.gadgets.panes ui.gadgets.tables
@@ -87,7 +87,7 @@ SYMBOLS: file-observers i18n-pointer note-font-list options outline-pointer
     f swap [ drop not dup ] partition [ 2array ] 2map >hashtable nip
     ;
 : lines>element ( lines -- element )
-    [ [ { $nl } ] when-empty ] map
+    ! [ [ { $nl } ] [ " " 2array ] if-empty ] map
     ;
 : config-path ( filename -- path )
     ".kullulu" prepend-path home prepend-path
@@ -189,16 +189,38 @@ set-gestures
 ! ------------------------------------------------- manual
 TUPLE: manual < pane font stylesheet
     ;
+CONSTANT: manual-default
+    H{
+        { default-span-style H{
+            { font-name "sans-serif" }
+            { font-size 24 }
+            } }
+        { heading-style H{
+            { font-name "sans-serif" }
+            { font-size 32 }
+            { font-style bold }
+            } }
+        { default-block-style H{
+            { wrap-margin 1000 } ! Pixels between left margin and right margin
+            } }
+        { table-content-style H{
+            { wrap-margin 900 } ! Pixels between left margin and right margin
+            } }
+        }
+: default-size ( -- number )
+    manual-default default-span-style swap at font-size swap at
+    ; inline
+: (update-stylesheet) ( stylesheet factor key -- stylesheet factor )
+    dup manual-default at font-size swap ?at    ! ss factor key size flag
+    [ pick *                                    ! ss factor key new-size
+        [ pick at ] dip                         ! ss factor target new-size
+        font-size rot set-at
+        ]
+    [ 2drop ] if
+    ; inline
 : update-stylesheet ( gadget -- )
-    [ font>> size>> ] keep              ! new-size gadget
-    [                                   ! new-size stylesheet
-        swap                            ! stylesheet new-size
-        default-span-style pick at      ! stylesheet new-size style
-        font-size swap                  ! stylesheet new-size key style
-        set-at                          ! stylesheet
-        ]                               ! gadget quotation
-    change-stylesheet                   ! gadget
-    drop
+    [ stylesheet>> ] [ font>> size>> default-size / ] bi
+    over keys [ (update-stylesheet) ] each 2drop
     ;
 M: manual set-font-size ( size gadget -- size )
     [ set-gadget-font-size ] [ update-stylesheet ] [ set-label-font-size ] tri
@@ -208,10 +230,14 @@ M: manual set-font-size ( size gadget -- size )
     ;
 M: manual model-changed ( model observer -- ) ! #### called by open-window ?
     "manual=>model-changed has been called" print flush ! ####
+    over value>>
+    over parent>>
+    children>> [ border? ] find nip children>> [ label? ] find nip
+    text<<
     dup stylesheet>>                                ! model observer stylesheet
     [                                               ! model observer
         [                                           ! model
-            [ value>> manual-path fetch-lines lines>element print-element ]
+            [ value>> manual-path parse-file >array print-element ]
             with-default-style
             ]
         with-pane
@@ -228,9 +254,8 @@ set-gestures
 : <manual> ( -- manual )
     f manual new-pane
     <font> "sans-serif" >>name >>font note-to-font-list
-    2 <hashtable> "sans-serif" font-name 22 font-size [ pick set-at ] 2bi@
-    default-span-style associate >>stylesheet
-    f <model> [ >>model ] [ "page0.txt" swap set-model ] bi
+    manual-default clone >>stylesheet
+    f <model> [ >>model ] [ "0.txt" swap set-model ] bi
     "initial connections :" print ! #### to be removed
     dup model>> connections>> [ class-of . ] each flush ! #### to be removed
     ! #### where are connections initialized ?
@@ -289,7 +314,9 @@ M: outline-table handle-gesture ( gesture outline-table -- ? )
     dup selection-index>> value>> dup 0 > -1 (?move)
     ;
 : open-manual ( table -- )
-    manual-gadget>> "Outline Manager" open-window
+    manual-gadget>>
+    "Outline Manager" "Manual" i18n " - " glue
+    open-window
     ;
 : init-editor ( editor -- )
     dup control-value first empty?
@@ -369,7 +396,7 @@ set-gestures
     trivial-renderer <outline-table>
     dup outline-pointer set ! so that item-editor can find it
     <item-editor> >>editor-gadget
-    <manual> "Manual" i18n <labeled-gadget> >>manual-gadget
+    <manual> "" <labeled-gadget> >>manual-gadget
     ; inline
 : make-arrow-frame ( outline-table title -- arrow-frame )
     f <model> [ pick calls<< ] keep
