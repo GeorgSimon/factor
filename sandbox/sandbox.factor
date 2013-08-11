@@ -15,8 +15,7 @@ TUPLE: test-pane < pane style
     dup dim.
     ;
 MAIN-WINDOW: test-main
-    { }
-    <test-pane> >>gadgets
+    { } <test-pane> >>gadgets
     ;
 test-pane
 H{
