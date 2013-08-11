@@ -165,19 +165,24 @@ TUPLE: item-editor < editor
 M: item-editor set-font-size ( size gadget -- size )
     [ set-gadget-font-size ] [ set-label-font-size ] bi
     ;
-: jot ( editor -- )
-    [   control-value                               ! new
-        outline-pointer get                         ! new table
-        [ target-index swap over ] [ model>> ] bi   ! index new index model
-        [ insert-nth ] change-model                 ! index
-        drop ! #### outline-pointer get swap select-row
-        ]
-    [ hide-glass ]
-    bi
+: jot ( editor -- index )
+    control-value                               ! new
+    outline-pointer get                         ! new table
+    [ target-index swap over ] [ model>> ] bi   ! index new index model
+    [ insert-nth ] change-model                 ! index
+    ;
+: jot-and-up ( editor -- )
+    jot outline-pointer get swap select-row
+    ;
+: mark-all ( editor -- )
+    { 0 0 } swap mark>> set-model
     ;
 item-editor
 H{
-    { T{ key-down { sym "RET" } }   [ jot ] }
+    { T{ key-down { sym "UP" } }    [ [ jot-and-up ] [ hide-glass ] bi ] }
+    { T{ key-down { sym "DOWN" } }  [ [ jot drop ] [ hide-glass ] bi ] }
+    ! #### { T{ key-down { sym "S+RET" } } currently does not work
+    { T{ key-down { sym "RET" } }   [ [ jot drop ] [ mark-all ] bi ] }
     }
 set-gestures
 
@@ -185,6 +190,109 @@ set-gestures
     item-editor new-editor note-to-font-list
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
     "item title editor" <labeled-gadget>
+    ;
+! ------------------------------------------------- outline-table
+TUPLE: outline-table < table
+    { calls model } manual-gadget manual-open? popup editor-gadget
+    ;
+M: outline-table set-font-size ( size gadget -- size )
+    [ set-gadget-font-size ] [ set-label-font-size ] bi
+    ;
+: (handle-gesture) ( gesture outline-table handler -- f )
+    over calls>> value>> [ 1 ] unless*
+    [ 2dup ( outline-table -- ) call-effect ] times
+    drop f swap calls>> set-model drop f
+    ;
+: update-calls ( outline-table number -- )
+    swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
+    ;
+: ?update-calls ( gesture outline-table -- propagate-flag )
+    swap gesture>string dup [ dup empty? [ not ] when ] when
+    dup "BACKSPACE" = [
+        drop calls>> f swap set-model f ! f = handled ! #### dip ?
+    ] [
+        dup string>number [ nip update-calls f ]
+        [ [ "Not a command key :" i18n write bl print flush ] when* drop t ]
+        if*
+    ] if
+    ;
+M: outline-table handle-gesture ( gesture outline-table -- ? )
+    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
+    ;
+: (archive) ( table object -- )
+    "Line to archive :" write bl first . flush ! ####
+    dup [ selection-index>> value>> dup ] [ model>> ] bi
+    [ remove-nth ] change-model
+    select-row
+    ; inline
+: archive ( table -- )
+    dup (selected-row)
+    [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
+    ;
+: finish-manager ( gadget -- )
+    save-all-data close-window
+    ; inline
+: (?move) ( table index flag direction -- )
+    swap
+    [ over + rot model>> [ [ exchange ] keep ] change-model ]
+    [ 3drop "No movement possible" i18n print flush ]
+    if
+    ;
+: move-down ( table -- )
+    dup [ selection-index>> value>> dup ] [ control-value length 1 - ] bi <
+    1 (?move)
+    ;
+: move-up ( table -- )
+    dup selection-index>> value>> dup 0 > -1 (?move)
+    ;
+: open-manual ( table -- )
+    dup manual-open?>> [
+        drop "Manual already open" print flush
+    ] [
+        t >>manual-open?
+        manual-gadget>>
+        "Outline Manager" "Manual" i18n " - " glue
+        open-window
+    ] if
+    ;
+: init-editor ( editor -- )
+    dup control-value first empty?
+    [
+        "item title"                    ! editor string
+        0 over length 2array swap       ! editor array string
+        pick user-input* drop           ! editor array
+        swap caret>> set-model          !
+    ] [                                 ! editor
+        mark-all
+        ]
+    if
+    ;
+: selection-rect ( table -- rectangle )
+    [ [ line-height ] [ target-index ] bi * 0 swap ]
+    [ [ total-width>> ] [ line-height ] bi 2 + ]
+    bi
+    [ 2array ] 2bi@ <rect>
+    ;
+: pop-editor ( table -- )
+    dup editor-gadget>> dup content>> init-editor
+    over selection-rect [ show-popup ] curry [ request-focus ] bi
+    ;
+outline-table
+H{
+    { T{ key-down { sym "DELETE" } }                [ archive ] }
+    { T{ key-down { sym "a" } }                     [ archive ] }
+    { T{ key-down { sym "ESC" } }                   [ finish-manager ] }
+    { T{ key-down { sym "t" } }                     [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
+    { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym "F1" } }                    [ open-manual ] }
+    { T{ key-down { sym " " } }                     [ pop-editor ] }
+    }
+set-gestures
+
+: <outline-table> ( model renderer -- table )
+    outline-table new-table t >>selection-required? note-to-font-list
     ;
 ! ------------------------------------------------- manual
 TUPLE: manual < pane font stylesheet
@@ -244,10 +352,14 @@ M: manual model-changed ( model observer -- ) ! #### called by open-window ?
         ]
     with-variables
     ;
+: close-manual ( gadget -- )
+    f outline-pointer get manual-open?<<
+    close-window
+    ;
 manual
 H{
-    { T{ key-down { sym "ESC" } }   [ close-window ] }
-    { T{ key-down { sym "F1" } }    [ close-window ] }
+    { T{ key-down { sym "ESC" } }   [ close-manual ] }
+    { T{ key-down { sym "F1" } }    [ close-manual ] }
     }
 set-gestures
 
@@ -259,103 +371,6 @@ set-gestures
     "initial connections :" print ! #### to be removed
     dup model>> connections>> [ class-of . ] each flush ! #### to be removed
     ! #### where are connections initialized ?
-    ;
-! ------------------------------------------------- outline-table
-TUPLE: outline-table < table { calls model } manual-gadget popup editor-gadget
-    ;
-M: outline-table set-font-size ( size gadget -- size )
-    [ set-gadget-font-size ] [ set-label-font-size ] bi
-    ;
-: (handle-gesture) ( gesture outline-table handler -- f )
-    over calls>> value>> [ 1 ] unless*
-    [ 2dup ( outline-table -- ) call-effect ] times
-    drop f swap calls>> set-model drop f
-    ;
-: update-calls ( outline-table number -- )
-    swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
-    ;
-: ?update-calls ( gesture outline-table -- propagate-flag )
-    swap gesture>string dup [ dup empty? [ not ] when ] when
-    dup "BACKSPACE" = [
-        drop calls>> f swap set-model f ! f = handled ! #### dip ?
-    ] [
-        dup string>number [ nip update-calls f ]
-        [ [ "Not a command key :" i18n write bl print flush ] when* drop t ]
-        if*
-    ] if
-    ;
-M: outline-table handle-gesture ( gesture outline-table -- ? )
-    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
-    ;
-: (archive) ( table object -- )
-    "Line to archive :" write bl first . flush ! ####
-    dup [ selection-index>> value>> dup ] [ model>> ] bi
-    [ remove-nth ] change-model
-    select-row
-    ; inline
-: archive ( table -- )
-    dup (selected-row)
-    [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
-    ;
-: finish-manager ( gadget -- )
-    save-all-data close-window
-    ; inline
-: (?move) ( table index flag direction -- )
-    swap
-    [ over + rot model>> [ [ exchange ] keep ] change-model ]
-    [ 3drop "No movement possible" i18n print flush ]
-    if
-    ;
-: move-down ( table -- )
-    dup [ selection-index>> value>> dup ] [ control-value length 1 - ] bi <
-    1 (?move)
-    ;
-: move-up ( table -- )
-    dup selection-index>> value>> dup 0 > -1 (?move)
-    ;
-: open-manual ( table -- )
-    manual-gadget>>
-    "Outline Manager" "Manual" i18n " - " glue
-    open-window
-    ;
-: init-editor ( editor -- )
-    dup control-value first empty?
-    [
-        "item title"                    ! editor string
-        0 over length 2array swap       ! editor array string
-        pick user-input* drop           ! editor array
-        swap caret>> set-model          !
-    ] [                                 ! editor
-        { 0 0 } swap mark>> set-model
-        ]
-    if
-    ;
-: selection-rect ( table -- rectangle )
-    [ [ line-height ] [ target-index ] bi * 0 swap ]
-    [ [ total-width>> ] [ line-height ] bi 2 + ]
-    bi
-    [ 2array ] 2bi@ <rect>
-    ;
-: pop-editor ( table -- )
-    dup editor-gadget>> dup content>> init-editor
-    over selection-rect [ show-popup ] curry [ request-focus ] bi
-    ;
-outline-table
-H{
-    { T{ key-down { sym "DELETE" } }                [ archive ] }
-    { T{ key-down { sym "a" } }                     [ archive ] }
-    { T{ key-down { sym "ESC" } }                   [ finish-manager ] }
-    { T{ key-down { sym "t" } }                     [ move-down ] }
-    { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
-    { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
-    { T{ key-down { sym "h" } }                     [ move-up ] }
-    { T{ key-down { sym "F1" } }                    [ open-manual ] }
-    { T{ key-down { sym " " } }                     [ pop-editor ] }
-    }
-set-gestures
-
-: <outline-table> ( model renderer -- table )
-    outline-table new-table t >>selection-required? note-to-font-list
     ;
 ! ------------------------------------------------- configuration
 : process-option ( array -- )

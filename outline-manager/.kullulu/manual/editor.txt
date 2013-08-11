@@ -1,0 +1,16 @@
+USING: help.markup ;
+
+"#### : noch nicht implementiert"
+{ $nl }
+
+{ $heading "Editor-Steuerung" }
+{ $table
+    { "Editor schließen, ohne den Editor-Inhalt zu speichern" "Esc" }
+    { "Speichern, Editor schließen und über den neuen Eintrag zeigen" "UP" }
+    { "Speichern, Editor schließen und unter den neuen Eintrag zeigen" "DOWN" }
+    { "Speichern und über den neuen Eintrag zeigen ####" "Shift+Enter" }
+    { "Speichern und unter den neuen Eintrag zeigen" "Enter" }
+    }
+{ $nl }
+
+"Die Enter-Taste hat also die selbe Wirkung wie beim Schreiben von  fortlaufendem Text."
