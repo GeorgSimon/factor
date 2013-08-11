@@ -316,7 +316,7 @@ CONSTANT: manual-default
             { font-style bold }
             } }
         { default-block-style H{
-            { wrap-margin 1000 } ! Pixels between left margin and right margin
+            { wrap-margin 1200 } ! Pixels between left margin and right margin
             } }
         { table-content-style H{
             { wrap-margin 900 } ! Pixels between left margin and right margin
@@ -325,25 +325,44 @@ CONSTANT: manual-default
 : default-size ( -- number )
     manual-default default-span-style swap at font-size swap at
     ; inline
-: (update-stylesheet) ( stylesheet factor key -- stylesheet factor )
-    dup manual-default at font-size swap ?at    ! ss factor key size flag
-    [ pick *                                    ! ss factor key new-size
-        [ pick at ] dip                         ! ss factor target new-size
-        font-size rot set-at
+: (update-ss) ( ss factor slot key -- ss factor slot )
+    ! multiply manual-default key>> slot>> with factor
+    ! store result in ss key>>
+    3dup manual-default at      ! ss factor slot key factor slot default-style
+    ?at                         ! ss factor slot key factor old flag
+    [                           ! ss factor slot key factor old
+        *                       ! ss factor slot key new
+        [ pick ] 2dip           ! ss factor slot ss key new
+        [ swap at ] dip         ! ss factor slot target new
+        pick rot                ! ss factor slot new slot target
+        set-at                  ! ss factor slot
         ]
-    [ 2drop ] if
+    [ 3drop ] if
     ; inline
-: update-stylesheet ( gadget -- )
-    [ stylesheet>> ] [ font>> size>> default-size / ] bi
-    over keys [ (update-stylesheet) ] each 2drop
+: update-ss ( stylesheet factor slot -- )
+    over 1 = [ pick keys [ (update-ss) ] each ] unless 3drop
     ;
 M: manual set-font-size ( size gadget -- size )
-    [ set-gadget-font-size ] [ update-stylesheet ] [ set-label-font-size ] tri
+    [ set-gadget-font-size ]
+    [ [ stylesheet>> ] [ font>> size>> default-size / ] bi font-size update-ss ]
+    [ set-label-font-size ]
+    tri
     ;
 : manual-path ( filename -- path )
     "manual" prepend-path config-path
     ;
+: default-wrap-margin ( -- number )
+    manual-default default-block-style swap at wrap-margin swap at
+    ; inline
+: update-ss-wrap-margin ( new manual-gadget -- )
+    stylesheet>> swap default-wrap-margin / wrap-margin update-ss
+    ; inline
 M: manual model-changed ( model observer -- ) ! also called by open-window
+    dup dim>> first dup zero? [ ! called by open-window
+        drop
+    ] [
+        over update-ss-wrap-margin
+    ] if
     over value>> over parent>>
     children>> [ border? ] find nip children>> [ label? ] find nip
     text<<
