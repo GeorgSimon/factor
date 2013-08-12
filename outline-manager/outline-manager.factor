@@ -159,9 +159,11 @@ M: display-control set-font-size ( size gadget -- size )
     set-gadget-font-size
     ;
 : <display-control> ( model -- display-control )
-    "" display-control new-label swap >>model ;
+    "" display-control new-label swap >>model
+    ;
 : <arrow-frame> ( table title model quot -- frame )
     <arrow> <display-control> note-to-font-list { 1 1 } <border>
+    COLOR: LightCyan <solid> >>interior ! basis/colors/constants/rgb.txt
     [ <labeled-gadget> ] dip
     1 2 arrow-frame new-frame { 0 0 } >>filled-cell
     swap { 0 1 } grid-add swap { 0 0 } grid-add

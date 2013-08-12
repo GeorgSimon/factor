@@ -1,6 +1,6 @@
 USING: help.markup ;
 
-"#### : noch nicht implementiert"
+{ $heading "Benutzer-Oberfläche" }
 { $nl }
 
-"2.txt fehlt noch"
+"Die Beschreibung der Benutzer-Oberfläche fehlt noch."

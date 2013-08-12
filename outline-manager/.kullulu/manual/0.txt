@@ -1,30 +1,6 @@
 USING: help.markup ;
 
-"#### : noch nicht implementiert"
-{ $nl }
-
 { $heading "Einleitung" }
 { $nl }
 
-"Der allgemeine Teil des Handbuchs wird mit den Ziffertasten gesteuert."
-{ $nl }
-
-{ $table
-    { "0" "diese Einleitung" }
-    { "1" "Benutzer-Oberfläche" }
-    { "2" "Listenverwaltung" }
-    { "3" "Listenverwaltung" }
-    { "9" "Optionen" }
-    }
-{ $nl }
-
-"Für die Befehle des Hauptprogramms erhalten Sie die Beschreibungen mit der selben Taste, mit der Sie im Hauptprogramm den Befehl aufrufen."
-{ $nl }
-
-{ $table
-    { "Esc" "Daten speichern und Programm beenden" }
-    { "Leertaste" "Editor öffnen" }
-    { "a" "archivieren" }
-    { "h" "höher" }
-    { "t" "tiefer" }
-    }
+"Die Einleitung fehlt noch."

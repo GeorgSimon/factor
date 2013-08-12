@@ -30,8 +30,8 @@ bi
 ! ------------------------------------------------- main
 
 ".kullulu/translations.txt" home prepend-path "outline.txt" 2array [
-file-observers off init-i18n make-outline-manager drop
-file-observers get [ path>> ] each
+file-observers off
+init-i18n make-outline-manager drop file-observers get [ path>> ] each
 ] unit-test
 
 ! ------------------------------------------------- sandbox
