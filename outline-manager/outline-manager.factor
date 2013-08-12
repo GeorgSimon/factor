@@ -12,7 +12,7 @@ USING: accessors arrays assocs
     namespaces parser prettyprint sequences splitting timers ui ui.gadgets
     ui.gadgets.books ui.gadgets.borders ui.gadgets.editors ui.gadgets.frames
     ui.gadgets.glass ui.gadgets.grids ui.gadgets.labeled ui.gadgets.labels
-    ui.gadgets.line-support ui.gadgets.panes ui.gadgets.tables
+    ui.gadgets.line-support ui.gadgets.packs ui.gadgets.panes ui.gadgets.tables
     ui.gestures ui.pens.gradient ui.pens.solid
     vectors words
     ;
@@ -450,12 +450,16 @@ set-gestures
         "\" not found. Data will not be saved periodically." print flush ]
     if*
     ; inline
-: make-outline-table ( model -- outline-table )
+: (make-outline-table) ( model -- outline-table )
     trivial-renderer <outline-table>
     dup outline-pointer set ! so that item-editor can find it
     <item-editor> >>editor-gadget
     <manual> "" <labeled-gadget> >>manual-gadget
     ; inline
+: make-outline-table ( -- outline-table title )
+    "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
+    [ init-model (make-outline-table) ] [ path>> normalize-path ] bi
+    ;
 : make-arrow-frame ( outline-table title -- arrow-frame )
     f <model> [ pick calls<< ] keep
     [   [ number>string " " prepend "count of calls :" i18n prepend ]
@@ -464,9 +468,7 @@ set-gestures
     <arrow-frame> ! ( table title model quot -- frame )
     ; inline
 : make-outline-manager ( -- arrow-frame )
-    "outline.txt" [ [ 1array ] map ] [ [ first ] map ] <file-observer>
-    [ init-model make-outline-table ] [ path>> normalize-path ] bi
-    make-arrow-frame
+    make-outline-table make-arrow-frame
     options "font-size" word-prop [ set-noted ] when*
     ; inline
 : outline-manager ( -- )
