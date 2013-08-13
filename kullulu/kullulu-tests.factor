@@ -1,3 +1,5 @@
+! "kullulu" test
+
 USING: kernel kullulu models namespaces sequences tools.test
     ;
 { fsm-members } [ off ] each
