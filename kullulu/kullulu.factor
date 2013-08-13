@@ -3,18 +3,18 @@
 ! #### refresh-all "kullulu" run
 USING: classes prettyprint ;
 
-USING: accessors continuations
+USING: accessors assocs continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
-    kernel math.parser models namespaces sequences splitting
+    kernel math math.parser models namespaces sequences splitting
     ui ui.gadgets ui.gadgets.tables
     ui.gestures vectors words
     ;
 IN: kullulu
 
-SYMBOLS: fsm-members options
+SYMBOLS: fsm-members options translations
     ;
 : init-globals ( -- )
-    { fsm-members } [ off ] each
+    { fsm-members options translations } [ off ] each
     ;
 : config-path ( filename -- path )
     ".kullulu" prepend-path home prepend-path
@@ -36,6 +36,18 @@ SYMBOLS: fsm-members options
 : line>words ( line -- array )
     " " split [ empty? not ] filter
     ;
+! ------------------------------------------------- i18n
+: store-translation ( seq hashtable translation index -- seq hashtable' )
+    swap                        ! seq hashtable index value
+    [ 1 - pick nth ] dip        ! seq hashtable key value
+    swap pick set-at
+    ; inline
+: (store-translations) ( lines hashtable lines -- lines hashtable' )
+    [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index
+    ; inline
+: store-translations ( lines -- )
+    H{ } clone over (store-translations) translations set drop
+    ; inline
 ! ------------------------------------------------- options
 : option. ( value name -- value name )
     over number>string over write bl print
@@ -80,7 +92,8 @@ TUPLE: table-editor < table
     {   { "Das \"model\" wird später" }
         { "mit Hilfe des \"file-observers\" initialisiert." }
         { "Der Dateiname für dieses Gadget" }
-        { "kann nur über eine Option geändert werden." } }
+        { "kann nur über eine Option geändert werden." }
+        { "Diese Option ist noch nicht implementiert." } }
     <model>
     trivial-renderer table-editor new-table fsm-subscribe
     ;
@@ -100,6 +113,8 @@ set-gestures
     ;
 : kullulu ( -- )
     init-globals
+    "translations.txt" config-path fetch-lines store-translations
+    translations get . ! ####
     "options.txt" config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
