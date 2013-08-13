@@ -1,21 +1,24 @@
 ! #### = todo
 ! #### for development and debugging only :
 ! #### refresh-all "kullulu" run
-USING: classes io prettyprint ;
+USING: accessors classes kernel prettyprint sequences ;
 
-USING: accessors arrays kernel models
-    ui ui.gadgets.status-bar ui.gadgets.tables ui.gadgets.worlds
+USING: models
+    ui ui.gadgets.status-bar ui.gadgets ui.gadgets.tables ui.gadgets.worlds
     ;
 IN: kullulu
 
+TUPLE: table-editor < table
+    ;
+: <table-editor> ( -- gadget )
+    { { "a" } { "b" } { "c" } { "d" } } <model>
+    trivial-renderer table-editor new-table
+    ;
+! ------------------------------------------------- main
 : <main-gadget> ( -- gadget )
-    { { "a" } { "b" } { "c" } { "d" } } <model> trivial-renderer <table>
+    <table-editor>
     ;
 : kullulu ( -- )
-    [
-        "status bar text" <main-gadget>
-        [ "Kullulu" open-status-window ] [ show-status ] bi
-        ]
-    with-ui
+    [ <main-gadget> "Kullulu" open-status-window ] with-ui
     ;
 MAIN: kullulu
