@@ -1,12 +1,13 @@
 ! #### = todo
 ! #### for development and debugging only :
 ! #### refresh-all "kullulu" run
-USING: accessors classes kernel prettyprint sequences ;
+USING: classes prettyprint ;
 
-USING: continuations io io.backend io.encodings.utf8 io.files io.pathnames
-    models namespaces
+USING: accessors continuations
+    io io.backend io.encodings.utf8 io.files io.pathnames
+    kernel math.parser models namespaces sequences splitting
     ui ui.gadgets ui.gadgets.tables
-    ui.gestures vectors
+    ui.gestures vectors words
     ;
 IN: kullulu
 
@@ -14,6 +15,9 @@ SYMBOLS: fsm-members options
     ;
 : init-globals ( -- )
     { fsm-members } [ off ] each
+    ;
+: config-path ( filename -- path )
+    ".kullulu" prepend-path home prepend-path
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -26,14 +30,36 @@ SYMBOLS: fsm-members options
 : fetch-lines ( path -- lines )
     [ utf8 file-lines ] [ print-file-error { } ] recover
     ;
+: discard-comments ( lines -- lines' )
+    [ CHAR: # over index [ head ] when* ] map
+    ;
+: line>words ( line -- array )
+    " " split [ empty? not ] filter
+    ;
 ! ------------------------------------------------- options
-: config-path ( filename -- path )
-    ".kullulu" prepend-path home prepend-path
-    ;
-: read-options ( -- )
-    "options.txt" config-path fetch-lines
-    . flush
-    ;
+: option. ( value name -- value name )
+    over number>string over write bl print
+    ; inline
+: process-option ( line -- )
+    line>words
+    [   options swap
+        [ second string>number ] [ first ] bi option.
+        set-word-prop
+        ]
+    [   drop "Syntax error :" write [ bl write ] each nl
+        ]
+    recover
+    ; inline
+: process-options ( lines -- )
+    discard-comments [ empty? not ] filter
+    dup empty? [
+        "No options found"
+    ] [
+        "Found options :"
+    ] if
+    print nl
+    [ process-option ] each nl flush
+    ; inline
 ! ------------------------------------------------- fsm
 ! fsm = font-size management
 ! -------------------------------------------------
@@ -43,9 +69,9 @@ SYMBOLS: fsm-members options
 GENERIC: set-font-size ( size object -- size )
 
 : set-font-sizes ( -- )
-    ! options "font-size" word-prop [ set-noted ] when*
-    24 fsm-members get [ set-font-size ] each
-    drop
+    options "font-size" word-prop [
+        fsm-members get [ set-font-size ] each drop
+    ] when*
     ;
 ! ------------------------------------------------- table-editor
 TUPLE: table-editor < table
@@ -73,7 +99,8 @@ set-gestures
     set-font-sizes
     ;
 : kullulu ( -- )
-    init-globals read-options
+    init-globals
+    "options.txt" config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
 MAIN: kullulu
