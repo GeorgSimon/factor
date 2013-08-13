@@ -4,7 +4,7 @@
 USING: accessors classes kernel prettyprint sequences ;
 
 USING: models namespaces
-    ui ui.gadgets.status-bar ui.gadgets ui.gadgets.tables ui.gadgets.worlds
+    ui ui.gadgets ui.gadgets.tables
     ui.gestures vectors
     ;
 IN: kullulu
@@ -50,6 +50,6 @@ set-gestures
     ;
 : kullulu ( -- )
     init-globals
-    [ <main-gadget> "Kullulu" open-status-window ] with-ui
+    [ <main-gadget> dup "Kullulu" open-window ] with-ui
     ;
 MAIN: kullulu
