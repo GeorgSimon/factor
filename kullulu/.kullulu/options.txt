@@ -1,0 +1,11 @@
+# Kommentare beginnen mit # in der ersten Spalte
+# Leerzeilen sind wirkungslos
+
+# Schlüssel         Wert    beliebiger Text
+
+font-size             16
+
+width                400    Pixel
+height               600    Pixel
+
+save-interval          2    Minuten

@@ -2,10 +2,10 @@
 
 USING: kernel kullulu models namespaces sequences tools.test
     ;
-{ fsm-members } [ off ] each
+init-globals
 
 { t } [
-{ } <model> <table-editor> fsm-members get first =
+<table-editor> fsm-members get first =
 ] unit-test
 
 ! ------------------------------------------------- sandbox
