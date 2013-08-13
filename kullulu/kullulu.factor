@@ -48,6 +48,13 @@ SYMBOLS: fsm-members options translations
 : store-translations ( lines -- )
     H{ } clone over (store-translations) translations set drop
     ; inline
+: i18n ( line -- translation/line )
+    translations get ?at [
+        "No translation found for following text line :"
+        translations get ?at drop print
+        "\"" dup pick glue print nl flush
+    ] unless
+    ;
 ! ------------------------------------------------- options
 : option. ( value name -- value name )
     over number>string over write bl print
@@ -65,9 +72,9 @@ SYMBOLS: fsm-members options translations
 : process-options ( lines -- )
     discard-comments [ empty? not ] filter
     dup empty? [
-        "No options found"
+        "No options found" i18n
     ] [
-        "Found options :"
+        "Found options :" i18n
     ] if
     print nl
     [ process-option ] each nl flush
@@ -114,7 +121,6 @@ set-gestures
 : kullulu ( -- )
     init-globals
     "translations.txt" config-path fetch-lines store-translations
-    translations get . ! ####
     "options.txt" config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
