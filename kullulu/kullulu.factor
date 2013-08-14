@@ -154,13 +154,13 @@ H{
     }
 set-gestures
 
-! ------------------------------------------------- 3-track
-TUPLE: 3-track < track
+! ------------------------------------------------- editor-track
+TUPLE: editor-track < track
     ;
-: <3-track> ( orientation -- track )
-    3-track new-track
+: <editor-track> ( -- track )
+    vertical editor-track new-track
     ;
-M: 3-track focusable-child* ( gadget -- child )
+M: editor-track focusable-child* ( gadget -- child )
     children>> first
     ;
 ! ------------------------------------------------- main
@@ -184,7 +184,7 @@ M: 3-track focusable-child* ( gadget -- child )
     <persistent> translations set
     ; inline
 : <main-gadget> ( -- gadget )
-    vertical <3-track>
+    <editor-track>
     fsm-members off
     <table-editor> set-font-sizes .5 track-add
     ;
