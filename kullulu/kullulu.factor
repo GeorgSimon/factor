@@ -3,7 +3,7 @@
 ! #### refresh-all "kullulu" run
 USING: classes ;
 
-USING: accessors assocs continuations
+USING: accessors arrays assocs continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
     kernel math math.parser models namespaces prettyprint sequences splitting
     ui ui.gadgets ui.gadgets.tables
@@ -12,7 +12,7 @@ USING: accessors assocs continuations
 FROM: models => change-model ; ! to clear ambiguity
 IN: kullulu
 
-SYMBOLS: fsm-members options translations
+SYMBOLS: fsm-members options persistents translations
     ;
 : config-path ( filename -- path )
     ".kullulu" prepend-path home prepend-path
@@ -43,8 +43,11 @@ SYMBOLS: fsm-members options translations
 : (init-translations) ( lines hashtable lines -- hashtable' )
     [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index nip
     ; inline
-: init-translations ( lines -- )
-    H{ } clone over (init-translations) <model> translations set
+: init-translations ( lines -- model )
+    H{ } clone over (init-translations) <model>
+    ; inline
+: translations>lines ( hashtable -- lines )
+    [ [ "" ] 2dip 3array ] { } assoc>map concat
     ; inline
 : print-?translated ( line -- )
     translations get value>> ?at drop print
@@ -61,6 +64,34 @@ SYMBOLS: fsm-members options translations
         dup . extend-translations
         nl flush
     ] unless
+    ;
+! ------------------------------------------------- persistent models
+! persistent models are
+! - initialized from path using lines>
+! - flushed to path using >line if dirty
+! -------------------------------------------------
+TUPLE: persistent path model >lines dirty
+    ;
+: <persistent> ( lines> path >lines -- model )
+    persistent new swap >>>lines swap >>path            ! lines> object
+    dup persistents [ ?push ] change                    ! lines> object
+    dup path>> fetch-lines rot call( lines -- model )   ! object model
+    2dup add-connection
+    [ swap model<< ] keep
+    ;
+M: persistent model-changed ( model persistent -- )
+    t swap dirty<< drop
+    ;
+: (save-persistent) ( object -- )
+    f over dirty<<
+    [ model>> value>> ] [ >lines>> call( value -- lines ) ] [ path>> ] tri
+    utf8 set-file-lines
+    ; inline
+: save-persistent ( object -- )
+    dup dirty>> [ (save-persistent) ] [ drop ] if
+    ;
+: save-persistents ( -- ) ! to be called when finishing and also periodically
+    persistents get [ save-persistent ] each
     ;
 ! ------------------------------------------------- options
 : option. ( value name -- value name )
@@ -116,19 +147,27 @@ M: table-editor set-font-size ( size object -- size )
     ;
 table-editor
 H{
-    { T{ key-down { sym "ESC" } }   [ close-window ] }
+    { T{ key-down { sym "ESC" } }   [ save-persistents close-window ] }
     }
 set-gestures
 
 ! ------------------------------------------------- main
+: init-i18n ( -- )
+    [ init-translations ]
+    "translations.txt" config-path
+    [ translations>lines ]
+    <persistent> translations set
+    ; inline
 : <main-gadget> ( -- gadget )
+    fsm-members off
     <table-editor>
     set-font-sizes
     ;
 : kullulu ( -- )
-    fsm-members off
-    "translations.txt" config-path fetch-lines init-translations
+    persistents off
+    init-i18n
     "options.txt" config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
+    ! #### persistents get first . flush
     ;
 MAIN: kullulu

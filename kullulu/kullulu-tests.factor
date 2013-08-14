@@ -1,6 +1,6 @@
 ! refresh-all "kullulu" test
 
-USING: kernel kullulu models namespaces sequences tools.test words
+USING: accessors kernel kullulu models namespaces sequences tools.test words
     ;
 
 { { "first" "second" "third" "fourth" } } [
@@ -17,9 +17,14 @@ options "font-size" word-prop
 fsm-members off <table-editor> fsm-members get first =
 ] unit-test
 
-"translations.txt" config-path fetch-lines init-translations
+persistents off init-i18n
+
+{ f } [ persistents get last dirty>> ] unit-test
 { "Gefundene Optionen :" } [ "Found options :" i18n ] unit-test
+{ f } [ persistents get last dirty>> ] unit-test
 { "missing translation" } [ "missing translation" i18n ] unit-test
+{ t } [ persistents get last dirty>> ] unit-test
+
 
 ! ------------------------------------------------- sandbox
 USING: classes prettyprint
