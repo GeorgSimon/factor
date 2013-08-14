@@ -13,11 +13,13 @@ process-options
 options "font-size" word-prop
 ] unit-test
 
-init-globals
-
 { t } [
-<table-editor> fsm-members get first =
+fsm-members off <table-editor> fsm-members get first =
 ] unit-test
+
+"translations.txt" config-path fetch-lines init-translations
+{ "Gefundene Optionen :" } [ "Found options :" i18n ] unit-test
+{ "missing translation" } [ "missing translation" i18n ] unit-test
 
 ! ------------------------------------------------- sandbox
 USING: classes prettyprint

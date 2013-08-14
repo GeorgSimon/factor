@@ -1,3 +1,9 @@
 
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
+
+A template has been inserted into the translation table.
+Ein Eintragsmuster wurde in die Übersetzungstabelle eingefügt.
+
+Found options :
+Gefundene Optionen :

@@ -1,20 +1,18 @@
 ! #### = todo
 ! #### for development and debugging only :
 ! #### refresh-all "kullulu" run
-USING: classes prettyprint ;
+USING: classes ;
 
 USING: accessors assocs continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
-    kernel math math.parser models namespaces sequences splitting
+    kernel math math.parser models namespaces prettyprint sequences splitting
     ui ui.gadgets ui.gadgets.tables
     ui.gestures vectors words
     ;
+FROM: models => change-model ; ! to clear ambiguity
 IN: kullulu
 
 SYMBOLS: fsm-members options translations
-    ;
-: init-globals ( -- )
-    { fsm-members options translations } [ off ] each
     ;
 : config-path ( filename -- path )
     ".kullulu" prepend-path home prepend-path
@@ -42,17 +40,26 @@ SYMBOLS: fsm-members options translations
     [ 1 - pick nth ] dip        ! seq hashtable key value
     swap pick set-at
     ; inline
-: (store-translations) ( lines hashtable lines -- lines hashtable' )
-    [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index
+: (init-translations) ( lines hashtable lines -- hashtable' )
+    [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index nip
     ; inline
-: store-translations ( lines -- )
-    H{ } clone over (store-translations) translations set drop
+: init-translations ( lines -- )
+    H{ } clone over (init-translations) <model> translations set
+    ; inline
+: print-?translated ( line -- )
+    translations get value>> ?at drop print
+    ;
+: extend-translations ( line -- line )
+    translations get [ over dup pick set-at ] change-model
+    "A template has been inserted into the translation table."
+    print-?translated
     ; inline
 : i18n ( line -- translation/line )
-    translations get ?at [
-        "No translation found for following text line :"
-        translations get ?at drop print
-        "\"" dup pick glue print nl flush
+    translations get value>> ?at [
+        nl
+        "No translation found for following text line :" print-?translated
+        dup . extend-translations
+        nl flush
     ] unless
     ;
 ! ------------------------------------------------- options
@@ -65,7 +72,7 @@ SYMBOLS: fsm-members options translations
         [ second string>number ] [ first ] bi option.
         set-word-prop
         ]
-    [   drop "Syntax error :" write [ bl write ] each nl
+    [   drop "Syntax error :" i18n write [ bl write ] each nl
         ]
     recover
     ; inline
@@ -96,7 +103,7 @@ GENERIC: set-font-size ( size object -- size )
 TUPLE: table-editor < table
     ;
 : <table-editor> ( -- gadget )
-    {   { "Das \"model\" wird später" }
+    {   { "Das \"model\" für den \"table-editor\" wird später" }
         { "mit Hilfe des \"file-observers\" initialisiert." }
         { "Der Dateiname für dieses Gadget" }
         { "kann nur über eine Option geändert werden." }
@@ -119,8 +126,8 @@ set-gestures
     set-font-sizes
     ;
 : kullulu ( -- )
-    init-globals
-    "translations.txt" config-path fetch-lines store-translations
+    fsm-members off
+    "translations.txt" config-path fetch-lines init-translations
     "options.txt" config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;

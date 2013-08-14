@@ -4,3 +4,5 @@
 # Schlüssel         Wert    beliebiger Text
 
 font-size             16
+
+syntax error
