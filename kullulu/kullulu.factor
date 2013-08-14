@@ -7,7 +7,7 @@ USING: accessors arrays assocs continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
     kernel math math.parser models namespaces prettyprint sequences splitting
     ui ui.gadgets ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
-    ui.gadgets.tables
+    ui.gadgets.tables ui.gadgets.tracks
     ui.gestures vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -154,6 +154,15 @@ H{
     }
 set-gestures
 
+! ------------------------------------------------- 3-track
+TUPLE: 3-track < track
+    ;
+: <3-track> ( orientation -- track )
+    3-track new-track
+    ;
+M: 3-track focusable-child* ( gadget -- child )
+    children>> first
+    ;
 ! ------------------------------------------------- main
 : init-options ( -- )
     {   { ".kullulu"          "config-dir" }
@@ -175,15 +184,17 @@ set-gestures
     <persistent> translations set
     ; inline
 : <main-gadget> ( -- gadget )
+    vertical <3-track>
     fsm-members off
-    <table-editor>
-    set-font-sizes
+    <table-editor> set-font-sizes .5 track-add
     ;
 : kullulu ( -- )
     init-options
     persistents off
     init-i18n
     options "options-file" word-prop config-path fetch-lines process-options
-    [ <main-gadget> dup "Kullulu" open-window content>> model>> . ] with-ui ! ####
+    [ <main-gadget> dup
+        "Kullulu" open-window
+        children>> first content>> model>> . ] with-ui ! ####
     ;
 MAIN: kullulu
