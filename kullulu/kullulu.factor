@@ -14,9 +14,6 @@ IN: kullulu
 
 SYMBOLS: fsm-members options persistents translations
     ;
-: config-path ( filename -- path )
-    ".kullulu" prepend-path home prepend-path
-    ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
@@ -43,8 +40,8 @@ SYMBOLS: fsm-members options persistents translations
 : (init-translations) ( lines hashtable lines -- hashtable' )
     [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index nip
     ; inline
-: init-translations ( lines -- model )
-    H{ } clone over (init-translations) <model>
+: init-translations ( lines -- hashtable )
+    H{ } clone over (init-translations)
     ; inline
 : translations>lines ( hashtable -- lines )
     [ [ "" ] 2dip 3array ] { } assoc>map concat
@@ -61,7 +58,8 @@ SYMBOLS: fsm-members options persistents translations
     translations get value>> ?at [
         nl
         "No translation found for following text line :" print-?translated
-        dup . extend-translations
+        dup .
+        extend-translations
         nl flush
     ] unless
     ;
@@ -75,8 +73,8 @@ TUPLE: persistent path model >lines dirty
 : <persistent> ( lines> path >lines -- model )
     persistent new swap >>>lines swap >>path            ! lines> object
     dup persistents [ ?push ] change                    ! lines> object
-    dup path>> fetch-lines rot call( lines -- model )   ! object model
-    2dup add-connection
+    dup path>> fetch-lines rot call( lines -- value )   ! object value
+    <model> 2dup add-connection
     [ swap model<< ] keep
     ;
 M: persistent model-changed ( model persistent -- )
@@ -133,14 +131,14 @@ GENERIC: set-font-size ( size object -- size )
 ! ------------------------------------------------- table-editor
 TUPLE: table-editor < table
     ;
+: data-path ( filename -- path )
+    options "data-dir" word-prop prepend-path
+    ;
 : <table-editor> ( -- gadget )
-    {   { "Das \"model\" für den \"table-editor\" wird später" }
-        { "mit Hilfe des \"file-observers\" initialisiert." }
-        { "Der Dateiname für dieses Gadget" }
-        { "kann nur über eine Option geändert werden." }
-        { "Diese Option ist noch nicht implementiert." } }
-    <model>
-    trivial-renderer table-editor new-table fsm-subscribe
+    [ [ 1array ] map ]
+    options "list-file" word-prop data-path
+    [ [ first ] map ]
+    <persistent> trivial-renderer table-editor new-table fsm-subscribe
     ;
 M: table-editor set-font-size ( size object -- size )
     [ dup ] dip font>> size<<
@@ -152,9 +150,22 @@ H{
 set-gestures
 
 ! ------------------------------------------------- main
+: init-options ( -- )
+    {   { ".kullulu"          "config-dir" }
+        { "kullulu"           "data-dir" }
+        { "options.txt"       "options-file" }
+        { "translations.txt"  "translations-file" }
+        { "list.txt"          "list-file" }
+        }
+    [ [ options ] dip [ first ] [ second ] bi set-word-prop ] each
+    ! #### if you want to process any command line arguments then here
+    ; inline
+: config-path ( filename -- path )
+    options "config-dir" word-prop prepend-path home prepend-path
+    ;
 : init-i18n ( -- )
     [ init-translations ]
-    "translations.txt" config-path
+    options "translations-file" word-prop config-path
     [ translations>lines ]
     <persistent> translations set
     ; inline
@@ -164,10 +175,10 @@ set-gestures
     set-font-sizes
     ;
 : kullulu ( -- )
+    init-options
     persistents off
     init-i18n
-    "options.txt" config-path fetch-lines process-options
+    options "options-file" word-prop config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
-    ! #### persistents get first . flush
     ;
 MAIN: kullulu

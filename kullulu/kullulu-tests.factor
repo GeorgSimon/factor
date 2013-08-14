@@ -13,6 +13,8 @@ process-options
 options "font-size" word-prop
 ] unit-test
 
+init-options
+
 { t } [
 fsm-members off <table-editor> fsm-members get first =
 ] unit-test
