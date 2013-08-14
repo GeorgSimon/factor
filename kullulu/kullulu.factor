@@ -6,7 +6,8 @@ USING: classes ;
 USING: accessors arrays assocs continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
     kernel math math.parser models namespaces prettyprint sequences splitting
-    ui ui.gadgets ui.gadgets.tables
+    ui ui.gadgets ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
+    ui.gadgets.tables
     ui.gestures vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -135,13 +136,17 @@ TUPLE: table-editor < table
     options "data-dir" word-prop prepend-path
     ;
 : <table-editor> ( -- gadget )
-    [ [ 1array ] map ]
     options "list-file" word-prop data-path
-    [ [ first ] map ]
-    <persistent> trivial-renderer table-editor new-table fsm-subscribe
+    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
+    trivial-renderer table-editor new-table fsm-subscribe
+    swap normalize-path <labeled-gadget> fsm-subscribe
     ;
 M: table-editor set-font-size ( size object -- size )
     [ dup ] dip font>> size<<
+    ;
+M: labeled-gadget set-font-size ( size object -- size )
+    children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> over >>size drop
     ;
 table-editor
 H{
@@ -179,6 +184,6 @@ set-gestures
     persistents off
     init-i18n
     options "options-file" word-prop config-path fetch-lines process-options
-    [ <main-gadget> "Kullulu" open-window ] with-ui
+    [ <main-gadget> dup "Kullulu" open-window content>> model>> . ] with-ui ! ####
     ;
 MAIN: kullulu

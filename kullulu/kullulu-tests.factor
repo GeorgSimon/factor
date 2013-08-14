@@ -16,7 +16,7 @@ options "font-size" word-prop
 init-options
 
 { t } [
-fsm-members off <table-editor> fsm-members get first =
+fsm-members off <table-editor> fsm-members get last =
 ] unit-test
 
 persistents off init-i18n
@@ -27,6 +27,10 @@ persistents off init-i18n
 { "missing translation" } [ "missing translation" i18n ] unit-test
 { t } [ persistents get last dirty>> ] unit-test
 
+! why are persistent models not connected twice ?
+{ 1 } [
+<table-editor> content>> model>> connections>> length
+] unit-test
 
 ! ------------------------------------------------- sandbox
 USING: classes prettyprint
