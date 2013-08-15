@@ -9,7 +9,7 @@ USING: accessors arrays assocs colors.constants continuations
     kernel math math.parser models models.arrow namespaces prettyprint
     sequences simple-flat-file splitting
     ui ui.gadgets ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
-    ui.gadgets.tables ui.gadgets.tracks
+    ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
     ui.gestures ui.pens.solid vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
@@ -155,6 +155,7 @@ M: editor-track focusable-child* ( gadget -- child )
     [ [ 1array ] map ] pick [ [ first ] map ] <persistent>  ! path constr model
     trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
     t >>selection-required? ! saves the user one key press  ! path table
+    <scroller>
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
     options "width" word-prop
     options "height" word-prop
@@ -171,6 +172,9 @@ TUPLE: table-editor < table calls
 M: labeled-gadget set-font-size ( size object -- size )
     children>> [ border? ] find nip children>> [ label? ] find nip
     font>> over >>size drop
+    ;
+: get-table ( labeled-gadget -- table )
+    content>> dup class-of . viewport>> gadget-child
     ;
 : (handle-gesture) ( gesture table-editor handler -- f )
     over calls>> value>> [ 1 ] unless*
@@ -251,7 +255,7 @@ set-gestures
     if*
     ;
 : <arrow-bar> ( labeled-editor -- labeled-editor label-control )
-    f <model> dup pick content>> calls<<
+    f <model> dup pick get-table calls<<
     [ value>message ] <arrow> <label-control> fsm-subscribe
     { 1 1 } <border>
     COLOR: LightCyan <solid> >>interior

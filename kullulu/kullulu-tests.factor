@@ -29,12 +29,12 @@ persistents off init-i18n
 
 { t } [
 <table-editor> <arrow-bar> children>> first model>> dependencies>> first
-swap content>> calls>> =
+swap get-table calls>> =
 ] unit-test
 
 ! why are persistent models not connected twice ?
 { 1 } [
-<table-editor> content>> model>> connections>> length
+<table-editor> get-table model>> connections>> length
 ] unit-test
 
 ! ------------------------------------------------- sandbox
