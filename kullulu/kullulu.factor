@@ -157,9 +157,9 @@ TUPLE: item-editor < editor
 : <item-editor> ( -- labeled-editor )
     item-editor new-editor fsm-subscribe
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    {   "Insert item : Enter"
-        "Close editor : Esc"
-        "Insert item and close editor : DOWN or UP"
+    {   "Close editor : Esc"
+        "Insert : Enter or Shift+Enter"
+        "Insert and close editor : DOWN or UP"
         }
     [ i18n ] map " -------- " join <labeled-gadget> fsm-subscribe
     ;
@@ -181,7 +181,8 @@ item-editor
 H{
     { T{ key-down { sym "UP" } }    [ [ jot-and-up ] [ hide-glass ] bi ] }
     { T{ key-down { sym "DOWN" } }  [ [ jot drop ] [ hide-glass ] bi ] }
-    ! #### { T{ key-down { sym "S+RET" } } currently doesn't work
+    { T{ key-down { mods { S+ } } { sym "RET" } }
+                                    [ [ jot-and-up ] [ mark-all ] bi ] }
     { T{ key-down { sym "RET" } }   [ [ jot drop ] [ mark-all ] bi ] }
     }
 set-gestures
