@@ -156,7 +156,9 @@ M: editor-track focusable-child* ( gadget -- child )
     trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
     t >>selection-required? ! saves the user one key press  ! path table
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
-    { 450 500 } >>pref-dim
+    options "width" word-prop
+    options "height" word-prop
+    2array >>pref-dim
     ;
 : <archive-table> ( -- labeled-gadget )
     [ <table> ] "archive-file" <list-table>
@@ -230,7 +232,9 @@ set-gestures
         { "list.txt"            "list-file" }
         { "options.txt"         "options-file" }
         { "translations.txt"    "translations-file" }
+        { 500                   "height" }
         { 5/4                   "quota" }
+        { 450                   "width" }
         }
     [ [ options ] dip [ first ] [ second ] bi set-word-prop ] each
     ! #### if you want to process any command line arguments then here
