@@ -150,12 +150,20 @@ M: editor-track focusable-child* ( gadget -- child )
     children>> first
     ;
 ! ------------------------------------------------- table-editor
+: <archive-table> ( -- labeled-gadget )
+    options "archive-file" word-prop data-path
+    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
+    trivial-renderer <table> fsm-subscribe
+    t >>selection-required? ! saves the user one key press
+    swap normalize-path <labeled-gadget> fsm-subscribe
+    ;
 TUPLE: table-editor < table calls
     ;
 : <table-editor> ( -- labeled-gadget )
     options "list-file" word-prop data-path
     [ [ 1array ] map ] over [ [ first ] map ] <persistent>
     trivial-renderer table-editor new-table fsm-subscribe
+    t >>selection-required?
     swap normalize-path <labeled-gadget> fsm-subscribe
     ;
 M: labeled-gadget set-font-size ( size object -- size )
@@ -186,19 +194,34 @@ M: labeled-gadget set-font-size ( size object -- size )
 M: table-editor handle-gesture ( gesture table-editor -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
+: target-index ( table -- index )
+    selection-index>> value>> [ 0 ] unless*
+    ;
+: ?move ( table index flag direction -- )
+    swap
+    [ over + rot model>> [ [ exchange ] keep ] change-model ]
+    [ 3drop "No movement possible" i18n print flush ]
+    if
+    ;
+: move-down ( table -- )
+    dup [ target-index dup ] [ control-value length 1 - ] bi < 1 ?move
+    ;
+: move-up ( table -- )
+    dup target-index dup 0 > -1 ?move
+    ;
+: save-and-close ( table-editor -- )
+    save-persistents close-window
+    ;
 table-editor
 H{
-    { T{ key-down { sym "ESC" } }   [ save-persistents close-window ] }
+    { T{ key-down { sym "t" } }                     [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
+    { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
+    { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym "ESC" } }                   [ save-and-close ] }
     }
 set-gestures
 
-! ------------------------------------------------- archive-table
-: <archive-table> ( -- labeled-gadget )
-    options "archive-file" word-prop data-path
-    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
-    trivial-renderer <table> fsm-subscribe
-    swap normalize-path <labeled-gadget> fsm-subscribe
-    ;
 ! ------------------------------------------------- main
 : init-options ( -- )
     {   { ".kullulu"            "config-dir" }

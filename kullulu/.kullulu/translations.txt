@@ -1,9 +1,15 @@
 
+Not a command key :
+Not a command key :
+
 Found options :
 Gefundene Optionen :
 
 Syntax error :
 Syntax-Fehler :
+
+No movement possible
+No movement possible
 
 count of calls :
 Anzahl der Aufrufe :
