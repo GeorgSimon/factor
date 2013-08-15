@@ -1,14 +1,16 @@
 ! #### = todo
+
 ! #### for development and debugging only :
 ! #### refresh-all "kullulu" run
 USING: classes ;
 
-USING: accessors arrays assocs continuations
+USING: accessors arrays assocs colors.constants continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
-    kernel math math.parser models namespaces prettyprint sequences splitting
+    kernel math math.parser models models.arrow namespaces prettyprint
+    sequences simple-flat-file splitting
     ui ui.gadgets ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
     ui.gadgets.tables ui.gadgets.tracks
-    ui.gestures vectors words
+    ui.gestures ui.pens.solid vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
 IN: kullulu
@@ -26,11 +28,14 @@ SYMBOLS: fsm-members options persistents translations
 : fetch-lines ( path -- lines )
     [ utf8 file-lines ] [ print-file-error { } ] recover
     ;
-: discard-comments ( lines -- lines' )
-    [ CHAR: # over index [ head ] when* ] map
-    ;
 : line>words ( line -- array )
     " " split [ empty? not ] filter
+    ;
+: config-path ( filename -- path )
+    options "config-dir" word-prop prepend-path home prepend-path
+    ;
+: data-path ( filename -- path )
+    options "data-dir" word-prop prepend-path
     ;
 ! ------------------------------------------------- i18n
 : store-translation ( seq hashtable translation index -- seq hashtable' )
@@ -38,11 +43,9 @@ SYMBOLS: fsm-members options persistents translations
     [ 1 - pick nth ] dip        ! seq hashtable key value
     swap pick set-at
     ; inline
-: (init-translations) ( lines hashtable lines -- hashtable' )
+: lines>translations ( lines -- hashtable )
+    H{ } clone over
     [ dup 3 mod 2 = [ store-translation ] [ 2drop ] if ] each-index nip
-    ; inline
-: init-translations ( lines -- hashtable )
-    H{ } clone over (init-translations)
     ; inline
 : translations>lines ( hashtable -- lines )
     [ [ "" ] 2dip 3array ] { } assoc>map concat
@@ -107,7 +110,7 @@ M: persistent model-changed ( model persistent -- )
     recover
     ; inline
 : process-options ( lines -- )
-    discard-comments [ empty? not ] filter
+    drop-comments
     dup empty? [
         "No options found" i18n
     ] [
@@ -124,25 +127,34 @@ M: persistent model-changed ( model persistent -- )
     ;
 GENERIC: set-font-size ( size object -- size )
 
+M: label-control set-font-size ( size object -- size )
+    [ dup ] dip font>> size<<
+    ;
+M: table set-font-size ( size object -- size )
+    [ dup ] dip font>> size<<
+    ;
 : set-font-sizes ( -- )
     options "font-size" word-prop [
         fsm-members get [ set-font-size ] each drop
     ] when*
     ;
+! ------------------------------------------------- editor-track
+TUPLE: editor-track < track
+    ;
+: <editor-track> ( -- track )
+    vertical editor-track new-track
+    ;
+M: editor-track focusable-child* ( gadget -- child )
+    children>> first
+    ;
 ! ------------------------------------------------- table-editor
-TUPLE: table-editor < table
+TUPLE: table-editor < table calls
     ;
-: data-path ( filename -- path )
-    options "data-dir" word-prop prepend-path
-    ;
-: <table-editor> ( -- gadget )
+: <table-editor> ( -- labeled-gadget )
     options "list-file" word-prop data-path
     [ [ 1array ] map ] over [ [ first ] map ] <persistent>
     trivial-renderer table-editor new-table fsm-subscribe
     swap normalize-path <labeled-gadget> fsm-subscribe
-    ;
-M: table-editor set-font-size ( size object -- size )
-    [ dup ] dip font>> size<<
     ;
 M: labeled-gadget set-font-size ( size object -- size )
     children>> [ border? ] find nip children>> [ label? ] find nip
@@ -154,47 +166,52 @@ H{
     }
 set-gestures
 
-! ------------------------------------------------- editor-track
-TUPLE: editor-track < track
-    ;
-: <editor-track> ( -- track )
-    vertical editor-track new-track
-    ;
-M: editor-track focusable-child* ( gadget -- child )
-    children>> first
+! ------------------------------------------------- archive-table
+: <archive-table> ( -- labeled-gadget )
+    options "archive-file" word-prop data-path
+    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
+    trivial-renderer <table> fsm-subscribe
+    swap normalize-path <labeled-gadget> fsm-subscribe
     ;
 ! ------------------------------------------------- main
 : init-options ( -- )
     {   { ".kullulu"          "config-dir" }
         { "kullulu"           "data-dir" }
+        { "archive.txt"       "archive-file" }
+        { "list.txt"          "list-file" }
         { "options.txt"       "options-file" }
         { "translations.txt"  "translations-file" }
-        { "list.txt"          "list-file" }
         }
     [ [ options ] dip [ first ] [ second ] bi set-word-prop ] each
     ! #### if you want to process any command line arguments then here
     ; inline
-: config-path ( filename -- path )
-    options "config-dir" word-prop prepend-path home prepend-path
-    ;
 : init-i18n ( -- )
-    [ init-translations ]
+    [ lines>translations ]
     options "translations-file" word-prop config-path
     [ translations>lines ]
     <persistent> translations set
     ; inline
+: <arrow-bar> ( labeled-editor -- labeled-editor label-control )
+    f <model> dup pick content>> calls<<
+    [   [ number>string " " prepend "count of calls :" i18n prepend ]
+        [ "Quit : Esc    Manual : F1" i18n ]
+        if* ]
+    <arrow> <label-control> fsm-subscribe
+    { 1 1 } <border>
+    COLOR: LightCyan <solid> >>interior
+    ; inline
 : <main-gadget> ( -- gadget )
-    <editor-track>
     fsm-members off
-    <table-editor> set-font-sizes .5 track-add
+    <editor-track>
+    <table-editor> <arrow-bar> [ 5 track-add ] dip f track-add
+    <archive-table> 4 track-add
+    set-font-sizes
     ;
 : kullulu ( -- )
     init-options
     persistents off
     init-i18n
     options "options-file" word-prop config-path fetch-lines process-options
-    [ <main-gadget> dup
-        "Kullulu" open-window
-        children>> first content>> model>> . ] with-ui ! ####
+    [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
 MAIN: kullulu

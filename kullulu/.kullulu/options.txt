@@ -1,8 +1,6 @@
-# Kommentare beginnen mit # in der ersten Spalte
+# Kommentare beginnen mit # oder @ und reichen bis zum Zeilenende
 # Leerzeilen sind wirkungslos
 
 # Schlüssel         Wert    beliebiger Text
 
 font-size             16
-
-syntax error

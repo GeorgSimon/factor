@@ -10,3 +10,6 @@ Keine Übersetzung gefunden für folgende Textzeile :
 
 A template has been inserted into the translation table.
 Ein Eintragsmuster wurde in die Übersetzungstabelle eingefügt.
+
+Quit : Esc    Manual : F1
+Beenden : Esc    Handbuch : F1

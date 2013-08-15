@@ -27,6 +27,11 @@ persistents off init-i18n
 { "missing translation" } [ "missing translation" i18n ] unit-test
 { t } [ persistents get last dirty>> ] unit-test
 
+{ t } [
+<table-editor> <arrow-bar> children>> first model>> dependencies>> first
+swap content>> calls>> =
+] unit-test
+
 ! why are persistent models not connected twice ?
 { 1 } [
 <table-editor> content>> model>> connections>> length
