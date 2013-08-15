@@ -162,6 +162,30 @@ M: labeled-gadget set-font-size ( size object -- size )
     children>> [ border? ] find nip children>> [ label? ] find nip
     font>> over >>size drop
     ;
+: (handle-gesture) ( gesture table-editor handler -- f )
+    over calls>> value>> [ 1 ] unless*
+    [ 2dup call( table-editor -- ) ] times
+    drop f swap calls>> set-model drop f
+    ;
+: update-calls ( table-editor number -- )
+    swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
+    ;
+: ?invalid. ( string/f -- )
+    [ "Not a command key :" i18n write bl print flush ] when*
+    ;
+: ?update-calls ( gesture table-editor -- propagate-flag )
+    swap gesture>string dup [ dup empty? [ not ] when ] when
+    dup "BACKSPACE" = [
+        drop calls>> f swap set-model f ! f = handled ! #### dip ?
+    ] [
+        dup string>number [ nip update-calls f ]
+        [ ?invalid. drop t ]
+        if*
+    ] if
+    ;
+M: table-editor handle-gesture ( gesture table-editor -- ? )
+    2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
+    ;
 table-editor
 H{
     { T{ key-down { sym "ESC" } }   [ save-persistents close-window ] }

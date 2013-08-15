@@ -5,6 +5,9 @@ Gefundene Optionen :
 Syntax error :
 Syntax-Fehler :
 
+count of calls :
+Anzahl der Aufrufe :
+
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
 
