@@ -59,13 +59,15 @@ SYMBOLS: fsm-members options persistents translations
     print-?translated
     ; inline
 : i18n ( line -- translation/line )
-    translations get value>> ?at [
-        nl
-        "No translation found for following text line :" print-?translated
-        dup .
-        extend-translations
-        nl flush
-    ] unless
+    translations get [
+        value>> ?at [
+            nl
+            "No translation found for following text line :" print-?translated
+            dup .
+            extend-translations
+            nl flush
+        ] unless
+    ] when* ! #### only needed when run from listener
     ;
 ! ------------------------------------------------- persistent models
 ! persistent models are
@@ -175,12 +177,13 @@ set-gestures
     ;
 ! ------------------------------------------------- main
 : init-options ( -- )
-    {   { ".kullulu"          "config-dir" }
-        { "kullulu"           "data-dir" }
-        { "archive.txt"       "archive-file" }
-        { "list.txt"          "list-file" }
-        { "options.txt"       "options-file" }
-        { "translations.txt"  "translations-file" }
+    {   { ".kullulu"            "config-dir" }
+        { "kullulu"             "data-dir" }
+        { "archive.txt"         "archive-file" }
+        { "list.txt"            "list-file" }
+        { "options.txt"         "options-file" }
+        { "translations.txt"    "translations-file" }
+        { 5/4                   "quota" }
         }
     [ [ options ] dip [ first ] [ second ] bi set-word-prop ] each
     ! #### if you want to process any command line arguments then here
@@ -191,20 +194,23 @@ set-gestures
     [ translations>lines ]
     <persistent> translations set
     ; inline
+: value>message ( number/f -- string )
+    [ number>string " " prepend "count of calls :" i18n prepend ]
+    [ "Quit : Esc    Manual : F1" i18n ]
+    if*
+    ;
 : <arrow-bar> ( labeled-editor -- labeled-editor label-control )
     f <model> dup pick content>> calls<<
-    [   [ number>string " " prepend "count of calls :" i18n prepend ]
-        [ "Quit : Esc    Manual : F1" i18n ]
-        if* ]
-    <arrow> <label-control> fsm-subscribe
+    [ value>message ] <arrow> <label-control> fsm-subscribe
     { 1 1 } <border>
     COLOR: LightCyan <solid> >>interior
     ; inline
 : <main-gadget> ( -- gadget )
     fsm-members off
     <editor-track>
-    <table-editor> <arrow-bar> [ 5 track-add ] dip f track-add
-    <archive-table> 4 track-add
+    <table-editor> <arrow-bar>
+    [ options "quota" word-prop track-add ] dip f track-add
+    <archive-table> 1 track-add
     set-font-sizes
     ;
 : kullulu ( -- )
