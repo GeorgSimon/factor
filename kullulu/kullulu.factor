@@ -6,9 +6,10 @@ USING: classes ;
 
 USING: accessors arrays assocs colors.constants continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
-    kernel math math.parser models models.arrow namespaces prettyprint
-    sequences simple-flat-file splitting
-    ui ui.gadgets ui.gadgets.borders ui.gadgets.labeled ui.gadgets.labels
+    kernel math math.parser math.rectangles models models.arrow
+    namespaces prettyprint sequences simple-flat-file splitting
+    ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
+    ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
     ui.gestures ui.pens.solid vectors words
     ;
@@ -31,11 +32,20 @@ SYMBOLS: fsm-members options persistents translations
 : line>words ( line -- array )
     " " split [ empty? not ] filter
     ;
+: get-option ( option-name -- option-value )
+    options swap word-prop
+    ;
+: option-path ( filename path-option -- path )
+    get-option prepend-path
+    ;
 : config-path ( filename -- path )
-    options "config-dir" word-prop prepend-path home prepend-path
+    "config-dir" option-path home prepend-path
     ;
 : data-path ( filename -- path )
-    options "data-dir" word-prop prepend-path
+    "data-dir" option-path
+    ;
+: target-index ( table -- index )
+    selection-index>> value>> [ 0 ] unless*
     ;
 ! ------------------------------------------------- i18n
 : store-translation ( seq hashtable translation index -- seq hashtable' )
@@ -129,16 +139,61 @@ M: persistent model-changed ( model persistent -- )
     ;
 GENERIC: set-font-size ( size object -- size )
 
-M: label-control set-font-size ( size object -- size )
+M: gadget set-font-size ( size object -- size )
     [ dup ] dip font>> size<<
     ;
-M: table set-font-size ( size object -- size )
-    [ dup ] dip font>> size<<
+M: labeled-gadget set-font-size ( size object -- size )
+    children>> [ border? ] find nip children>> [ label? ] find nip
+    font>> over >>size drop
     ;
 : set-font-sizes ( -- )
-    options "font-size" word-prop [
+    "font-size" get-option [
         fsm-members get [ set-font-size ] each drop
     ] when*
+    ;
+! ------------------------------------------------- item-editor
+TUPLE: item-editor < editor
+    ;
+: <item-editor> ( -- labeled-editor )
+    item-editor new-editor fsm-subscribe
+    COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
+    {   "Insert item : Enter"
+        "Close editor : Esc"
+        "Insert item and close editor : DOWN or UP"
+        }
+    [ i18n ] map " -------- " join <labeled-gadget> fsm-subscribe
+    ;
+: editor-owner ( editor -- owner )
+    parent>> parent>> owner>>
+    ;
+: jot ( editor -- index )
+    [ control-value ] [ editor-owner ] bi       ! new table
+    [ target-index swap over ] [ model>> ] bi   ! index new index model
+    [ insert-nth ] change-model                 ! index
+    ;
+: jot-and-up ( editor -- )
+    [ editor-owner ] [ jot ] bi select-row
+    ;
+: mark-all ( editor -- )
+    { 0 0 } swap mark>> set-model
+    ;
+item-editor
+H{
+    { T{ key-down { sym "UP" } }    [ [ jot-and-up ] [ hide-glass ] bi ] }
+    { T{ key-down { sym "DOWN" } }  [ [ jot drop ] [ hide-glass ] bi ] }
+    ! #### { T{ key-down { sym "S+RET" } } currently doesn't work
+    { T{ key-down { sym "RET" } }   [ [ jot drop ] [ mark-all ] bi ] }
+    }
+set-gestures
+: init-editor ( editor -- )
+    dup control-value first empty? [
+        "new item line" i18n            ! editor string
+        0 over length 2array swap       ! editor array string
+        pick user-input* drop           ! editor array
+        swap caret>> set-model          !
+    ] [                                 ! editor
+        mark-all
+    ] if
     ;
 ! ------------------------------------------------- editor-track
 TUPLE: editor-track < track
@@ -150,31 +205,23 @@ M: editor-track focusable-child* ( gadget -- child )
     children>> first
     ;
 ! ------------------------------------------------- table-editor
+TUPLE: table-editor < table calls popup editor-gadget
+    ;
 : <list-table> ( constructor file-option -- labeled-gadget )
-    options swap word-prop data-path swap                   ! path constr
+    get-option data-path swap                               ! path constr
     [ [ 1array ] map ] pick [ [ first ] map ] <persistent>  ! path constr model
     trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
     t >>selection-required? ! saves the user one key press  ! path table
     <scroller>
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
-    options "width" word-prop
-    options "height" word-prop
-    2array >>pref-dim
+    "width" get-option "height" get-option 2array >>pref-dim
+    ;
+: <table-editor> ( -- labeled-gadget )
+    [ table-editor new-table <item-editor> >>editor-gadget ]
+    "list-file" <list-table>
     ;
 : <archive-table> ( -- labeled-gadget )
     [ <table> ] "archive-file" <list-table>
-    ;
-TUPLE: table-editor < table calls
-    ;
-: <table-editor> ( -- labeled-gadget )
-    [ table-editor new-table ] "list-file" <list-table>
-    ;
-M: labeled-gadget set-font-size ( size object -- size )
-    children>> [ border? ] find nip children>> [ label? ] find nip
-    font>> over >>size drop
-    ;
-: get-table ( labeled-gadget -- table )
-    content>> dup class-of . viewport>> gadget-child
     ;
 : (handle-gesture) ( gesture table-editor handler -- f )
     over calls>> value>> [ 1 ] unless*
@@ -200,9 +247,6 @@ M: labeled-gadget set-font-size ( size object -- size )
 M: table-editor handle-gesture ( gesture table-editor -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
-: target-index ( table -- index )
-    selection-index>> value>> [ 0 ] unless*
-    ;
 : ?move ( table index flag direction -- )
     swap
     [ over + rot model>> [ [ exchange ] keep ] change-model ]
@@ -215,6 +259,16 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
 : move-up ( table -- )
     dup target-index dup 0 > -1 ?move
     ;
+: selection-rect ( table -- rectangle )
+    [ [ line-height ] [ target-index ] bi * 0 swap ]
+    [ [ total-width>> ] [ line-height ] bi 2 + ]
+    bi
+    [ 2array ] 2bi@ <rect>
+    ;
+: pop-editor ( table -- )
+    dup editor-gadget>> dup content>> init-editor
+    over selection-rect [ show-popup ] curry [ request-focus ] bi
+    ;
 : save-and-close ( table-editor -- )
     save-persistents close-window
     ;
@@ -224,6 +278,7 @@ H{
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
     { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym " " } }                     [ pop-editor ] }
     { T{ key-down { sym "ESC" } }                   [ save-and-close ] }
     }
 set-gestures
@@ -245,10 +300,13 @@ set-gestures
     ; inline
 : init-i18n ( -- )
     [ lines>translations ]
-    options "translations-file" word-prop config-path
+    "translations-file" get-option config-path
     [ translations>lines ]
     <persistent> translations set
     ; inline
+: get-table ( labeled-gadget -- table )
+    content>> viewport>> gadget-child
+    ;
 : value>message ( number/f -- string )
     [ number>string " " prepend "count of calls :" i18n prepend ]
     [ "Quit : Esc    Manual : F1" i18n ]
@@ -264,15 +322,13 @@ set-gestures
     fsm-members off
     <editor-track>
     <table-editor> <arrow-bar>
-    [ options "quota" word-prop track-add ] dip f track-add
+    [ "quota" get-option track-add ] dip f track-add
     <archive-table> 1 track-add
     set-font-sizes
     ;
 : kullulu ( -- )
-    init-options
-    persistents off
-    init-i18n
-    options "options-file" word-prop config-path fetch-lines process-options
+    init-options persistents off init-i18n
+    "options-file" get-option config-path fetch-lines process-options
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
 MAIN: kullulu

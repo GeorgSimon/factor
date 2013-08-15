@@ -1,12 +1,27 @@
 
-Not a command key :
-Keine Befehlstaste :
-
 Found options :
 Gefundene Optionen :
 
 Syntax error :
 Syntax-Fehler :
+
+No translation found for following text line :
+Keine Übersetzung gefunden für folgende Textzeile :
+
+Insert item : Enter
+Insert item : Enter
+
+Quit : Esc    Manual : F1
+Beenden : Esc    Handbuch : F1
+
+Insert item and close editor : DOWN or UP
+Insert item and close editor : DOWN or UP
+
+new item line
+new item line
+
+Close editor : Esc
+Close editor : Esc
 
 No movement possible
 Keine Verschiebung möglich
@@ -14,11 +29,8 @@ Keine Verschiebung möglich
 count of calls :
 Anzahl der Aufrufe :
 
-No translation found for following text line :
-Keine Übersetzung gefunden für folgende Textzeile :
-
 A template has been inserted into the translation table.
 Ein Eintragsmuster wurde in die Übersetzungstabelle eingefügt.
 
-Quit : Esc    Manual : F1
-Beenden : Esc    Handbuch : F1
+Not a command key :
+Keine Befehlstaste :
