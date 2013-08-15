@@ -1,6 +1,6 @@
 
 Not a command key :
-Not a command key :
+Keine Befehlstaste :
 
 Found options :
 Gefundene Optionen :
@@ -9,7 +9,7 @@ Syntax error :
 Syntax-Fehler :
 
 No movement possible
-No movement possible
+Keine Verschiebung möglich
 
 count of calls :
 Anzahl der Aufrufe :

@@ -150,21 +150,21 @@ M: editor-track focusable-child* ( gadget -- child )
     children>> first
     ;
 ! ------------------------------------------------- table-editor
+: <list-table> ( constructor file-option -- labeled-gadget )
+    options swap word-prop data-path swap                   ! path constr
+    [ [ 1array ] map ] pick [ [ first ] map ] <persistent>  ! path constr model
+    trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
+    t >>selection-required? ! saves the user one key press  ! path table
+    swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
+    { 450 500 } >>pref-dim
+    ;
 : <archive-table> ( -- labeled-gadget )
-    options "archive-file" word-prop data-path
-    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
-    trivial-renderer <table> fsm-subscribe
-    t >>selection-required? ! saves the user one key press
-    swap normalize-path <labeled-gadget> fsm-subscribe
+    [ <table> ] "archive-file" <list-table>
     ;
 TUPLE: table-editor < table calls
     ;
 : <table-editor> ( -- labeled-gadget )
-    options "list-file" word-prop data-path
-    [ [ 1array ] map ] over [ [ first ] map ] <persistent>
-    trivial-renderer table-editor new-table fsm-subscribe
-    t >>selection-required?
-    swap normalize-path <labeled-gadget> fsm-subscribe
+    [ table-editor new-table ] "list-file" <list-table>
     ;
 M: labeled-gadget set-font-size ( size object -- size )
     children>> [ border? ] find nip children>> [ label? ] find nip
