@@ -5,3 +5,4 @@
 
 font-size             16
 quota                  2    editor-height / archive-height
+save-interval          2    minutes

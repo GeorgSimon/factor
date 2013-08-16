@@ -4,10 +4,10 @@
 ! #### refresh-all "kullulu" run
 USING: classes ;
 
-USING: accessors arrays assocs colors.constants continuations
+USING: accessors arrays assocs calendar colors.constants continuations
     io io.backend io.encodings.utf8 io.files io.pathnames
     kernel math math.parser math.rectangles models models.arrow
-    namespaces prettyprint sequences simple-flat-file splitting
+    namespaces prettyprint sequences simple-flat-file splitting timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
@@ -318,6 +318,14 @@ set-gestures
     [ translations>lines ]
     <persistent> translations set
     ; inline
+: init-timer ( -- )
+    "save-interval" options over word-prop [
+        minutes [ save-persistents ] swap delayed-every start-timer drop
+    ] [
+        "Option not found :" i18n write bl .
+        "Data will not be saved periodically." i18n print flush
+    ] if*
+    ; inline
 : get-table ( labeled-gadget -- table )
     content>> viewport>> gadget-child
     ;
@@ -343,6 +351,7 @@ set-gestures
 : kullulu ( -- )
     init-options persistents off init-i18n
     "options-file" get-option config-path fetch-lines process-options
+    init-timer
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;
 MAIN: kullulu
