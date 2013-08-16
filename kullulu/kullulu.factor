@@ -158,11 +158,11 @@ TUPLE: item-editor < editor
 : <item-editor> ( -- labeled-editor )
     item-editor new-editor fsm-subscribe
     COLOR: yellow [ over font>> background<< ] [ <solid> >>interior ] bi
-    {   "Close editor : Esc"
-        "Insert : Enter or Shift+Enter"
-        "Insert and close editor : DOWN or UP"
-        }
-    [ i18n ] map " -------- " join <labeled-gadget> fsm-subscribe
+    "Close editor : Esc"
+    "Insert : ↩ or ⇧↩"
+    "Insert and close editor : ↓ or ↑"
+    3array [ i18n ] map " -------- " join
+    <labeled-gadget> fsm-subscribe
     ;
 : editor-owner ( editor -- owner )
     parent>> parent>> owner>>
