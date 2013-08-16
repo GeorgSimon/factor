@@ -248,6 +248,16 @@ TUPLE: table-editor < table calls popup editor-gadget
 M: table-editor handle-gesture ( gesture table-editor -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
+: (archive) ( table object -- )
+    "Line to archive :" write bl first . flush ! ####
+    dup [ selection-index>> value>> dup ] [ model>> ] bi
+    [ remove-nth ] change-model
+    select-row
+    ; inline
+: archive ( table -- )
+    dup (selected-row)
+    [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
+    ;
 : ?move ( table index flag direction -- )
     swap
     [ over + rot model>> [ [ exchange ] keep ] change-model ]
@@ -275,6 +285,8 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
     ;
 table-editor
 H{
+    { T{ key-down { sym "DELETE" } }                [ archive ] }
+    { T{ key-down { sym "a" } }                     [ archive ] }
     { T{ key-down { sym "t" } }                     [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
