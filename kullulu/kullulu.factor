@@ -111,18 +111,19 @@ M: persistent model-changed ( model persistent -- )
 : option. ( value name -- value name )
     over number>string over write bl print
     ; inline
-: process-option ( line -- )
-    line>words
+: syntax-error. ( words error -- )
+    drop "Syntax error :" i18n write [ bl write ] each nl
+    ;
+: process-option ( words -- )
     [   options swap
         [ second string>number ] [ first ] bi option.
         set-word-prop
         ]
-    [   drop "Syntax error :" i18n write [ bl write ] each nl
+    [   syntax-error.
         ]
     recover
     ; inline
 : process-options ( lines -- )
-    drop-comments
     dup empty? [
         "No options found" i18n
     ] [
@@ -296,22 +297,35 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
 table-editor
 H{
     { T{ key-down { sym "DELETE" } }                [ archive ] }
-    { T{ key-down { sym "a" } }                     [ archive ] }
-    { T{ key-down { sym "t" } }                     [ move-down ] }
+    { T{ key-down { sym "archive" } }               [ archive ] }
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
+    { T{ key-down { sym "move-down" } }             [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
-    { T{ key-down { sym "h" } }                     [ move-up ] }
+    { T{ key-down { sym "move-up" } }               [ move-up ] }
     { T{ key-down { sym " " } }                     [ pop-editor ] }
-    { T{ key-down { sym "z" } }                     [ retrieve ] }
+    { T{ key-down { sym "retrieve" } }              [ retrieve ] }
     { T{ key-down { sym "ESC" } }                   [ save-and-close ] }
     }
-set-gestures
+clone set-gestures
 
+: (insert-key) ( hashtable array -- hashtable' )
+    [ second ] [ first ] bi
+    pick keys [ sym>> over = ] find 2nip
+    [ [ pick at ] keep clone rot >>sym pick set-at ] [ drop ] if*
+    ;
+: insert-key ( hashtable array -- hashtable' )
+    [ (insert-key) ] [ syntax-error. flush ] recover
+    ;
+: insert-keys ( arrays -- )
+    table-editor "gestures" [ swap [ insert-key ] each ] change-word-prop
+    ! ( ..a word prop quot: ( ..a value -- ..b newvalue ) -- ..b )
+    ;
 ! ------------------------------------------------- main
 : init-options ( -- )
     {   { ".kullulu"            "config-dir" }
         { "kullulu"             "data-dir" }
         { "archive.txt"         "archive-file" }
+        { "command-keys.txt"    "keys-file" }
         { "list.txt"            "list-file" }
         { "options.txt"         "options-file" }
         { "translations.txt"    "translations-file" }
@@ -360,7 +374,9 @@ set-gestures
     ;
 : kullulu ( -- )
     init-options persistents off init-i18n
-    "options-file" get-option config-path fetch-lines process-options
+    "keys-file" "options-file"
+    [ get-option config-path fetch-lines drop-comments [ line>words ] map ] bi@
+    process-options insert-keys
     init-timer
     [ <main-gadget> "Kullulu" open-window ] with-ui
     ;

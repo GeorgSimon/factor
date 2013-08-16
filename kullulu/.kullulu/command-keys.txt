@@ -1,0 +1,7 @@
+archive     a
+archive     A   multiple keys are possible
+move-down   t
+test-error-trap
+move-up     h
+retrieve    z
+

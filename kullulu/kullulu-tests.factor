@@ -9,7 +9,7 @@ USING: accessors kernel kullulu models namespaces sequences tools.test words
 
 { 16 } [
 { "font-size 16 # commented" "# comment only" "" "Syntax error" }
-process-options
+[ line>words ] map process-options
 options "font-size" word-prop
 ] unit-test
 
