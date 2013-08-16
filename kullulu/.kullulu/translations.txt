@@ -1,27 +1,36 @@
 
-Close editor : Esc
-Editor schließen : Esc
-
-Insert : Enter or Shift+Enter
-Einfügen : Enter oder Shift+Enter
-
-Insert and close editor : DOWN or UP
-Einfügen und Schließen : DOWN oder UP
-
 Found options :
 Gefundene Optionen :
 
 Syntax error :
 Syntax-Fehler :
 
+Insert : Enter or Shift+Enter
+Einfügen : Enter oder Shift+Enter
+
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
+
+Nothing to retrieve
+Nothing to retrieve
 
 Quit : Esc    Manual : F1
 Beenden : Esc    Handbuch : F1
 
+Periodic data saving disabled.
+Das regelmäßige Speichern der Daten ist ausgeschaltet.
+
+Insert and close editor : DOWN or UP
+Einfügen und Schließen : DOWN oder UP
+
 new item line
 new item line
+
+Close editor : Esc
+Editor schließen : Esc
+
+Option not found :
+Option nicht gefunden :
 
 No movement possible
 Keine Verschiebung möglich

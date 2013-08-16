@@ -166,10 +166,12 @@ TUPLE: item-editor < editor
 : editor-owner ( editor -- owner )
     parent>> parent>> owner>>
     ;
-: jot ( editor -- index )
-    [ control-value ] [ editor-owner ] bi       ! new table
+: (jot) ( new table -- index )
     [ target-index swap over ] [ model>> ] bi   ! index new index model
     [ insert-nth ] change-model                 ! index
+    ;
+: jot ( editor -- index )
+    [ control-value ] [ editor-owner ] bi (jot)
     ;
 : jot-and-up ( editor -- )
     [ editor-owner ] [ jot ] bi select-row
@@ -249,37 +251,44 @@ TUPLE: table-editor < table calls popup editor-gadget
 M: table-editor handle-gesture ( gesture table-editor -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
-: (archive) ( table selected-row -- )
+: (archive) ( table-editor selected-row -- )
     0 archive-table get model>> [ insert-nth ] change-model
     dup [ selection-index>> value>> dup ] [ model>> ] bi
     [ remove-nth ] change-model
     select-row
     ; inline
-: archive ( table -- )
+: archive ( table-editor -- )
     dup (selected-row)
     [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
     ;
-: ?move ( table index flag direction -- )
+: ?move ( table-editor index flag direction -- )
     swap
     [ over + rot model>> [ [ exchange ] keep ] change-model ]
     [ 3drop "No movement possible" i18n print flush ]
     if
     ;
-: move-down ( table -- )
+: move-down ( table-editor -- )
     dup [ target-index dup ] [ control-value length 1 - ] bi < 1 ?move
     ;
-: move-up ( table -- )
+: move-up ( table-editor -- )
     dup target-index dup 0 > -1 ?move
     ;
-: selection-rect ( table -- rectangle )
+: selection-rect ( table-editor -- rectangle )
     [ [ line-height ] [ target-index ] bi * 0 swap ]
     [ [ total-width>> ] [ line-height ] bi 2 + ]
     bi
     [ 2array ] 2bi@ <rect>
     ;
-: pop-editor ( table -- )
+: pop-editor ( table-editor -- )
     dup editor-gadget>> dup content>> init-editor
     over selection-rect [ show-popup ] curry [ request-focus ] bi
+    ;
+: retrieve ( table-editor -- )
+    0 archive-table get
+    [   [ control-value nth ] [ model>> [ remove-nth ] change-model ] 2bi
+        over (jot) select-row ]
+    [ 4drop "Nothing to retrieve" i18n print flush ]
+    recover
     ;
 : save-and-close ( table-editor -- )
     save-persistents close-window
@@ -293,6 +302,7 @@ H{
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
     { T{ key-down { sym "h" } }                     [ move-up ] }
     { T{ key-down { sym " " } }                     [ pop-editor ] }
+    { T{ key-down { sym "z" } }                     [ retrieve ] }
     { T{ key-down { sym "ESC" } }                   [ save-and-close ] }
     }
 set-gestures
@@ -323,7 +333,7 @@ set-gestures
         minutes [ save-persistents ] swap delayed-every start-timer drop
     ] [
         "Option not found :" i18n write bl .
-        "Data will not be saved periodically." i18n print flush
+        "Periodic data saving disabled." i18n print flush
     ] if*
     ; inline
 : get-table ( labeled-gadget -- table )
