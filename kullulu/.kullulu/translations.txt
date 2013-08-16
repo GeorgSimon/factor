@@ -1,6 +1,12 @@
 
-Insert : Enter
-Insert : Enter
+Close editor : Esc
+Editor schließen : Esc
+
+Insert : Enter or Shift+Enter
+Einfügen : Enter oder Shift+Enter
+
+Insert and close editor : DOWN or UP
+Einfügen und Schließen : DOWN oder UP
 
 Found options :
 Gefundene Optionen :
@@ -8,41 +14,20 @@ Gefundene Optionen :
 Syntax error :
 Syntax-Fehler :
 
-Insert : Enter or Shift+Enter
-Insert : Enter or Shift+Enter
-
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
-
-Insert item : Enter
-Insert item : Enter
-
-Insert item and point above : Shift+Enter
-Insert item and point above : Shift+Enter
 
 Quit : Esc    Manual : F1
 Beenden : Esc    Handbuch : F1
 
-Insert item and close editor : DOWN or UP
-Insert item and close editor : DOWN or UP
-
-Insert and close editor : DOWN or UP
-Insert and close editor : DOWN or UP
-
 new item line
 new item line
-
-Close editor : Esc
-Close editor : Esc
 
 No movement possible
 Keine Verschiebung möglich
 
 count of calls :
 Anzahl der Aufrufe :
-
-Insert and point above : Shift+Enter
-Insert and point above : Shift+Enter
 
 A template has been inserted into the translation table.
 Ein Eintragsmuster wurde in die Übersetzungstabelle eingefügt.

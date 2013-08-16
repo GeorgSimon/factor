@@ -16,7 +16,7 @@ USING: accessors arrays assocs colors.constants continuations
 FROM: models => change-model ; ! to clear ambiguity
 IN: kullulu
 
-SYMBOLS: fsm-members options persistents translations
+SYMBOLS: archive-table fsm-subscribers options persistents translations
     ;
 ! ------------------------------------------------- utilities
 : error>message ( error -- string )
@@ -135,7 +135,7 @@ M: persistent model-changed ( model persistent -- )
 ! fsm = font-size management
 ! -------------------------------------------------
 : fsm-subscribe ( object -- object )
-    [ fsm-members [ ?push ] change ] keep
+    [ fsm-subscribers [ ?push ] change ] keep
     ;
 GENERIC: set-font-size ( size object -- size )
 
@@ -148,7 +148,7 @@ M: labeled-gadget set-font-size ( size object -- size )
     ;
 : set-font-sizes ( -- )
     "font-size" get-option [
-        fsm-members get [ set-font-size ] each drop
+        fsm-subscribers get [ set-font-size ] each drop
     ] when*
     ;
 ! ------------------------------------------------- item-editor
@@ -212,17 +212,18 @@ TUPLE: table-editor < table calls popup editor-gadget
     get-option data-path swap                               ! path constr
     [ [ 1array ] map ] pick [ [ first ] map ] <persistent>  ! path constr model
     trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
-    t >>selection-required? ! saves the user one key press  ! path table
     <scroller>
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
     "width" get-option "height" get-option 2array >>pref-dim
     ;
 : <table-editor> ( -- labeled-gadget )
-    [ table-editor new-table <item-editor> >>editor-gadget ]
+    [   table-editor new-table
+        t >>selection-required?
+        <item-editor> >>editor-gadget ]
     "list-file" <list-table>
     ;
 : <archive-table> ( -- labeled-gadget )
-    [ <table> ] "archive-file" <list-table>
+    [ <table> dup archive-table set ] "archive-file" <list-table>
     ;
 : (handle-gesture) ( gesture table-editor handler -- f )
     over calls>> value>> [ 1 ] unless*
@@ -248,8 +249,8 @@ TUPLE: table-editor < table calls popup editor-gadget
 M: table-editor handle-gesture ( gesture table-editor -- ? )
     2dup get-gesture-handler [ (handle-gesture) ] [ ?update-calls ] if*
     ;
-: (archive) ( table object -- )
-    "Line to archive :" write bl first . flush ! ####
+: (archive) ( table selected-row -- )
+    0 archive-table get model>> [ insert-nth ] change-model
     dup [ selection-index>> value>> dup ] [ model>> ] bi
     [ remove-nth ] change-model
     select-row
@@ -332,7 +333,7 @@ set-gestures
     COLOR: LightCyan <solid> >>interior
     ; inline
 : <main-gadget> ( -- gadget )
-    fsm-members off
+    fsm-subscribers off
     <editor-track>
     <table-editor> <arrow-bar>
     [ "quota" get-option track-add ] dip f track-add

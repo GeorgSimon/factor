@@ -16,7 +16,7 @@ options "font-size" word-prop
 init-options
 
 { t } [
-fsm-members off <table-editor> fsm-members get last =
+fsm-subscribers off <table-editor> fsm-subscribers get last =
 ] unit-test
 
 persistents off init-i18n
