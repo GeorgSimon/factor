@@ -7,13 +7,13 @@ USING: accessors kernel kullulu models namespaces sequences tools.test words
 "first   second third        fourth" line>words
 ] unit-test
 
+init-options persistents off init-i18n
+
 { 16 } [
 { "font-size 16 # commented" "# comment only" "" "Syntax error" }
 [ line>words ] map process-options
 options "font-size" word-prop
 ] unit-test
-
-init-options
 
 { t } [
 fsm-subscribers off <table-editor> fsm-subscribers get last =
@@ -40,3 +40,6 @@ swap get-table calls>> =
 ! ------------------------------------------------- sandbox
 USING: classes prettyprint
     ;
+{ "font-size 16 # commented" "# comment only" "" "Syntax error" }
+[ line>words ] map process-options
+options "font-size" word-prop .

@@ -1,0 +1,15 @@
+USING: help.markup ;
+
+{ $heading "Blättern im Handbuch" }
+{ $nl }
+
+"Der allgemeine Teil des Handbuchs wird mit den Ziffertasten gesteuert."
+{ $nl }
+
+{ $table
+    { "0" "Einleitung" }
+    { "1" "Blättern im Handbuch" }
+    { "2" "Benutzer-Oberfläche" }
+    { "3" "Listenverwaltung" }
+    { "9" "Optionen" }
+    }

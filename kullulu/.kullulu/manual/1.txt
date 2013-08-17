@@ -1,0 +1,27 @@
+USING: help.markup ;
+
+{ $heading "Blättern im Handbuch" }
+{ $nl }
+
+"Der allgemeine Teil des Handbuchs wird mit den Ziffertasten gesteuert."
+{ $nl }
+
+{ $table
+    { "0" "Einleitung" }
+    { "1" "Blättern im Handbuch" }
+    { "2" "Benutzer-Oberfläche" }
+    { "3" "Listenverwaltung" }
+    { "9" "Optionen" }
+    }
+{ $nl }
+
+"Für die Befehle des Hauptprogramms erhalten Sie die Beschreibungen mit der selben Taste, mit der Sie im Hauptprogramm den Befehl aufrufen."
+{ $nl }
+
+{ $table
+    { "Esc" "Daten speichern und Programm beenden" }
+    { "Leertaste" "Editor öffnen" }
+    { "a" "archivieren" }
+    { "h" "höher" }
+    { "t" "tiefer" }
+    }

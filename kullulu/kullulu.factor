@@ -5,15 +5,19 @@
 USING: classes ;
 
 USING: accessors arrays assocs calendar colors.constants continuations
-    io io.backend io.encodings.utf8 io.files io.pathnames
-    kernel math math.parser math.rectangles models models.arrow
-    namespaces prettyprint sequences simple-flat-file splitting timers
+    fry help.markup help.stylesheet
+    io io.backend io.encodings.utf8 io.files io.pathnames io.styles
+    kernel math math.parser math.rectangles models models.arrow namespaces
+    parser prettyprint quotations
+    sequences sets simple-flat-file splitting timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
-    ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
+    ui.gadgets.panes ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
     ui.gestures ui.pens.solid vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
+FROM: namespaces => set ; ! to clear ambiguity
+FROM: sets => members ; ! to clear ambiguity
 IN: kullulu
 
 SYMBOLS: archive-table fsm-subscribers options persistents translations
@@ -41,11 +45,17 @@ SYMBOLS: archive-table fsm-subscribers options persistents translations
 : config-path ( filename -- path )
     "config-dir" option-path home prepend-path
     ;
+: manual-path ( filename -- path )
+    "manual" prepend-path config-path
+    ; inline
 : data-path ( filename -- path )
     "data-dir" option-path
     ;
 : target-index ( table -- index )
     selection-index>> value>> [ 0 ] unless*
+    ;
+: get-label ( labeled-gadget -- label )
+    children>> [ border? ] find nip children>> [ label? ] find nip
     ;
 ! ------------------------------------------------- i18n
 : store-translation ( seq hashtable translation index -- seq hashtable' )
@@ -69,15 +79,20 @@ SYMBOLS: archive-table fsm-subscribers options persistents translations
     print-?translated
     ; inline
 : i18n ( line -- translation/line )
-    translations get [
-        value>> ?at [
-            nl
-            "No translation found for following text line :" print-?translated
-            dup .
-            extend-translations
-            nl flush
-        ] unless
-    ] when* ! #### only needed when run from listener
+    translations get value>> ?at [
+        nl
+        "No translation found for following text line :" print-?translated
+        dup .
+        extend-translations
+        nl flush
+    ] unless
+    ;
+! ------------------------------------------------- utilities using i18n
+: syntax-error. ( words error -- )
+    drop "Syntax error :" i18n write [ bl write ] each nl
+    ;
+: ?invalid. ( string/f -- )
+    [ ] [ "Not a command key :" i18n write bl print flush ] if-empty
     ;
 ! ------------------------------------------------- persistent models
 ! persistent models are
@@ -111,9 +126,6 @@ M: persistent model-changed ( model persistent -- )
 : option. ( value name -- value name )
     over number>string over write bl print
     ; inline
-: syntax-error. ( words error -- )
-    drop "Syntax error :" i18n write [ bl write ] each nl
-    ;
 : process-option ( words -- )
     [   options swap
         [ second string>number ] [ first ] bi option.
@@ -138,14 +150,16 @@ M: persistent model-changed ( model persistent -- )
 : fsm-subscribe ( object -- object )
     [ fsm-subscribers [ ?push ] change ] keep
     ;
+: fsm-unsubscribe ( object -- )
+    fsm-subscribers [ remove ] change
+    ;
 GENERIC: set-font-size ( size object -- size )
 
 M: gadget set-font-size ( size object -- size )
     [ dup ] dip font>> size<<
     ;
 M: labeled-gadget set-font-size ( size object -- size )
-    children>> [ border? ] find nip children>> [ label? ] find nip
-    font>> over >>size drop
+    get-label font>> over >>size drop
     ;
 : set-font-sizes ( -- )
     "font-size" get-option [
@@ -199,6 +213,75 @@ set-gestures
         mark-all
     ] if
     ;
+! ------------------------------------------------- manual
+SYMBOL: font-scale
+TUPLE: manual < pane stylesheet
+    ;
+M: manual ungraft* ( gadget -- )
+    [ fsm-unsubscribe ] [ parent>> fsm-unsubscribe ] bi
+    ;
+: adjust ( stylesheet size style scale -- stylesheet' size )
+    pick * font-size rot set-at
+    ;
+M: manual set-font-size ( size gadget -- size )
+    stylesheet>> swap over keys
+    [ pick at font-scale over ?at [ adjust ] [ 2drop ] if ] each nip
+    ;
+: path>element ( path -- element )
+    [ parse-file >array ] [ error>> error>message " : " rot 3array ] recover
+    ; inline
+: display ( path pane -- )
+    dup stylesheet>>
+    [ [ [ path>element print-element ] with-default-style ] with-pane ]
+    with-variables
+    ; inline
+M: manual model-changed ( model manual -- ) ! also called by open-window
+    [ value>> manual-path ] dip
+    [ parent>> get-label swap >>text relayout ] [ display ] 2bi
+    ;
+: switch ( manual-gadget filename -- )
+    swap model>> set-model
+    ;
+M: manual handle-gesture ( gesture manual -- ? )
+    2dup get-gesture-handler [
+        call( manual -- ) drop f
+    ] [
+        swap gesture>string dup string>number [
+            ".txt" append switch f
+        ] [
+            ?invalid. drop t
+        ] if
+    ] if*
+    ;
+manual
+H{
+    { T{ key-down { sym "ESC" } }   [ close-window ] }
+    { T{ key-down { sym "F1" } }    [ "0.txt" switch ] }
+    { T{ key-down { sym " " } }     [ "editor.txt" switch ] }
+    }
+clone set-gestures
+
+: <manual> ( filename -- gadget )
+    f manual new-pane fsm-subscribe
+    swap <model> >>model
+    H{
+        { default-block-style H{
+            { wrap-margin 400 } ! Pixels between left and right margin
+            } }
+        { default-span-style H{
+            { font-name "sans-serif" }
+            { font-scale 1 }
+            } }
+        { heading-style H{
+            { font-name "sans-serif" }
+            { font-scale 4/3 }
+            { font-style bold }
+            } }
+        }
+    >>stylesheet
+    "" <labeled-gadget> fsm-subscribe
+    set-font-sizes
+    ;
 ! ------------------------------------------------- editor-track
 TUPLE: editor-track < track
     ;
@@ -222,7 +305,8 @@ TUPLE: table-editor < table calls popup editor-gadget
 : <table-editor> ( -- labeled-gadget )
     [   table-editor new-table
         t >>selection-required?
-        <item-editor> >>editor-gadget ]
+        <item-editor> >>editor-gadget
+        ]
     "list-file" <list-table>
     ;
 : <archive-table> ( -- labeled-gadget )
@@ -236,11 +320,8 @@ TUPLE: table-editor < table calls popup editor-gadget
 : update-calls ( table-editor number -- )
     swap calls>> [ [ 10 * + 100 mod ] when* ] change-model
     ;
-: ?invalid. ( string/f -- )
-    [ "Not a command key :" i18n write bl print flush ] when*
-    ;
 : ?update-calls ( gesture table-editor -- propagate-flag )
-    swap gesture>string dup [ dup empty? [ not ] when ] when
+    swap gesture>string ! dup [ dup empty? [ not ] when ] when ! #### better ?
     dup "BACKSPACE" = [
         drop calls>> f swap set-model f ! f = handled ! #### dip ?
     ] [
@@ -274,6 +355,37 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
 : move-up ( table-editor -- )
     dup target-index dup 0 > -1 ?move
     ;
+: open-manual ( table-editor -- )
+    [ manual "gestures" word-prop ] dip
+    class-of "gestures" word-prop
+    [ keys ]
+    [ ]
+    [ values duplicates members ]
+    tri
+    [                                   ! manual-g keys editor-g command
+        pick                            ! manual-g keys editor-g command keys
+        swap                            ! manual-g keys editor-g keys command
+        '[                              ! manual-g keys editor-g key
+            over at _ =                 ! manual-g keys editor-g =
+            ]
+        filter                          ! manual-g keys editor-g pointers
+        [ key-down? ] partition first   ! manual-g keys editor-g targets string
+        ".txt" append                   ! manual-g keys editor-g targets fname
+        \ switch 2array >quotation      ! manual-g keys editor-g targets quot
+        swap                            ! manual-g keys editor-g quot targets
+        [ pick ] 2dip       ! manual-g keys editor-g manual-g quot targets
+        [ swap over ] dip   ! manual-g keys editor-g quot manual-g quot targets
+        [                   ! manual-g keys editor-g quot manual-g quot target
+            pick set-at     ! manual-g keys editor-g quot manual-g
+            over            ! manual-g keys editor-g quot manual-g quot
+            ]
+        each                ! manual-g keys editor-g quot manual-g quot
+        3drop               ! manual-g keys editor-g
+        ]
+    each
+    3drop
+    "0.txt" <manual> "Kullulu" "Manual" i18n " - " glue open-window
+    ;
 : selection-rect ( table-editor -- rectangle )
     [ [ line-height ] [ target-index ] bi * 0 swap ]
     [ [ total-width>> ] [ line-height ] bi 2 + ]
@@ -288,7 +400,7 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
     0 archive-table get
     [   [ control-value nth ] [ model>> [ remove-nth ] change-model ] 2bi
         over (jot) select-row ]
-    [ 4drop "Nothing to retrieve" i18n print flush ]
+    [ 4drop "Archive is empty" i18n print flush ]
     recover
     ;
 : save-and-close ( table-editor -- )
@@ -297,28 +409,36 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
 table-editor
 H{
     { T{ key-down { sym "DELETE" } }                [ archive ] }
-    { T{ key-down { sym "archive" } }               [ archive ] }
+    { "archive"                                     [ archive ] }
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }
-    { T{ key-down { sym "move-down" } }             [ move-down ] }
+    { "move-down"                                   [ move-down ] }
     { T{ key-down { mods { C+ } } { sym "UP" } }    [ move-up ] }
-    { T{ key-down { sym "move-up" } }               [ move-up ] }
+    { "move-up"                                     [ move-up ] }
+    { T{ key-down { sym "F1" } }                    [ open-manual ] }
     { T{ key-down { sym " " } }                     [ pop-editor ] }
-    { T{ key-down { sym "retrieve" } }              [ retrieve ] }
+    { "retrieve"                                    [ retrieve ] }
     { T{ key-down { sym "ESC" } }                   [ save-and-close ] }
     }
 clone set-gestures
 
 : (insert-key) ( hashtable array -- hashtable' )
     [ second ] [ first ] bi
-    pick keys [ sym>> over = ] find 2nip
-    [ [ pick at ] keep clone rot >>sym pick set-at ] [ drop ] if*
+    dup write bl over print             ! ht letter key
+    pick keys [ over = ] find           ! ht letter key i elt
+    2nip [                              ! ht letter elt
+        pick at                         ! ht letter value
+        key-down new rot >>sym          ! ht value new-key
+        pick set-at                     ! ht
+    ] [
+        drop
+    ] if*
     ;
 : insert-key ( hashtable array -- hashtable' )
-    [ (insert-key) ] [ syntax-error. flush ] recover
+    [ (insert-key) ] [ syntax-error. ] recover
     ;
 : insert-keys ( arrays -- )
     table-editor "gestures" [ swap [ insert-key ] each ] change-word-prop
-    ! ( ..a word prop quot: ( ..a value -- ..b newvalue ) -- ..b )
+    nl flush
     ;
 ! ------------------------------------------------- main
 : init-options ( -- )

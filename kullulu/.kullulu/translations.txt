@@ -1,18 +1,21 @@
 
+Archive is empty
+Das Archiv ist leer
+
 Found options :
 Gefundene Optionen :
 
 Syntax error :
 Syntax-Fehler :
 
-Insert : ↩ or ⇧↩
-Einfügen : ↩ oder ⇧↩
+Manual
+Manual
 
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
 
-Nothing to retrieve
-Nothing to retrieve
+Insert : ↩ or ⇧↩
+Einfügen : ↩ oder ⇧↩
 
 Quit : Esc    Manual : F1
 Beenden : Esc    Handbuch : F1
