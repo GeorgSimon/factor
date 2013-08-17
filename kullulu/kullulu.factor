@@ -6,7 +6,8 @@ USING: classes ;
 
 USING: accessors arrays assocs calendar colors.constants continuations
     fry help.markup help.stylesheet
-    io io.backend io.encodings.utf8 io.files io.pathnames io.styles
+    io io.backend io.encodings.utf8 io.directories io.files
+    io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow namespaces
     parser prettyprint quotations
     sequences sets simple-flat-file splitting timers
@@ -114,7 +115,9 @@ M: persistent model-changed ( model persistent -- )
 : (save-persistent) ( object -- )
     f over dirty<<
     [ model>> value>> ] [ >lines>> call( value -- lines ) ] [ path>> ] tri
-    utf8 set-file-lines
+    [ utf8 set-file-lines ]
+    [ drop dup parent-directory make-directory utf8 set-file-lines ]
+    recover
     ; inline
 : save-persistent ( object -- )
     dup dirty>> [ (save-persistent) ] [ drop ] if
