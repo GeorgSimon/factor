@@ -191,7 +191,7 @@ TUPLE: item-editor < editor
 : jot ( editor -- index )
     [ control-value ] [ editor-owner ] bi (jot)
     ;
-: jot-and-up ( editor -- )
+: jot-and-go ( editor -- )
     [ editor-owner ] [ jot ] bi select-row
     ;
 : mark-all ( editor -- )
@@ -199,11 +199,11 @@ TUPLE: item-editor < editor
     ;
 item-editor
 H{
-    { T{ key-down { sym "UP" } }    [ [ jot-and-up ] [ hide-glass ] bi ] }
     { T{ key-down { sym "DOWN" } }  [ [ jot drop ] [ hide-glass ] bi ] }
-    { T{ key-down { mods { S+ } } { sym "RET" } }
-                                    [ [ jot-and-up ] [ mark-all ] bi ] }
+    { T{ key-down { sym "UP" } }    [ [ jot-and-go ] [ hide-glass ] bi ] }
     { T{ key-down { sym "RET" } }   [ [ jot drop ] [ mark-all ] bi ] }
+    { T{ key-down { mods { S+ } } { sym "RET" } }
+                                    [ [ jot-and-go ] [ mark-all ] bi ] }
     }
 set-gestures
 : init-editor ( editor -- )
@@ -285,6 +285,15 @@ clone set-gestures
     "" <labeled-gadget> fsm-subscribe
     set-font-sizes
     ;
+! ------------------------------------------------- kullulu-renderer
+SINGLETON: kullulu-renderer
+
+M: kullulu-renderer row-columns
+    drop
+    ;
+M: kullulu-renderer column-titles
+    drop "Item Labeling" i18n 1array
+    ;
 ! ------------------------------------------------- editor-track
 TUPLE: editor-track < track
     ;
@@ -300,7 +309,7 @@ TUPLE: table-editor < table calls popup editor-gadget
 : <list-table> ( constructor file-option -- labeled-gadget )
     get-option data-path swap                               ! path constr
     [ [ 1array ] map ] pick [ [ first ] map ] <persistent>  ! path constr model
-    trivial-renderer rot call( m r -- t ) fsm-subscribe     ! path table
+    kullulu-renderer rot call( m r -- t ) fsm-subscribe     ! path table
     <scroller>
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
     "width" get-option "height" get-option 2array >>pref-dim
@@ -345,6 +354,22 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
 : archive ( table-editor -- )
     dup (selected-row)
     [ (archive) ] [ 2drop "No item selected" i18n print flush ] if
+    ;
+: go-down ( table-editor -- )
+    dup renderer>> column-titles length "" <repetition>
+    over selection-index>> value>> [        ! table new old-i
+        1 +
+        pick control-value length over = [  ! table new i
+            pick (selected-row) drop        ! table new i value
+            pick = [                        ! table new i
+                3dup rot model>>            ! table new i new i model
+                [ insert-nth ] change-model ! table new i
+            ] unless                        ! table new i
+        ] when                              ! table new i
+        nip select-row
+    ] [                                     ! table new
+        over (jot) select-row
+    ] if*
     ;
 : ?move ( table-editor index flag direction -- )
     swap
@@ -411,6 +436,7 @@ M: table-editor handle-gesture ( gesture table-editor -- ? )
     ;
 table-editor
 H{
+    { T{ key-down { sym "DOWN" } }                  [ go-down ] }
     { T{ key-down { sym "DELETE" } }                [ archive ] }
     { "archive"                                     [ archive ] }
     { T{ key-down { mods { C+ } } { sym "DOWN" } }  [ move-down ] }

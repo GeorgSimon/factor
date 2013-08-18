@@ -8,8 +8,11 @@ Gefundene Optionen :
 Syntax error :
 Syntax-Fehler :
 
+Item Labeling
+Beschriftung des Eintrags
+
 Manual
-Manual
+Handbuch
 
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
@@ -26,8 +29,8 @@ Das regelmäßige Speichern der Daten ist ausgeschaltet.
 Option not found :
 Option nicht gefunden :
 
-new item line
-new item line
+No item selected
+Kein Eintrag ausgewählt
 
 Close editor : Esc
 Editor schließen : Esc
