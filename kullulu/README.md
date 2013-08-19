@@ -1,5 +1,3 @@
-work in progress
+Kullulu 00 manages a list of lines of text.
 
-first aim
-- manage a text file in a gadget subclassing table
-- help window
+On Linux systems ".kullulu/" is searched for in "~/" , the user's home directory.

@@ -1,6 +1,4 @@
 USING: help.markup ;
 
-{ $heading "Benutzer-Oberfläche" }
+{ $heading "Seite 2" }
 { $nl }
-
-"Die Beschreibung der Benutzer-Oberfläche fehlt noch."

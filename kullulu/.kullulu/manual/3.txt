@@ -1,6 +1,4 @@
 USING: help.markup ;
 
-{ $heading "Listenverwaltung" }
+{ $heading "Seite 3" }
 { $nl }
-
-"Die Beschreibung der Listenverwaltung fehlt noch."

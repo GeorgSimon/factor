@@ -4,9 +4,9 @@
 ! #### refresh-all "kullulu" run
 USING: classes ;
 
-USING: accessors arrays assocs calendar colors.constants continuations
+USING: accessors arrays assocs calendar colors colors.constants continuations
     fry help.markup help.stylesheet
-    io io.backend io.encodings.utf8 io.directories io.files
+    io io.backend io.directories io.encodings.utf8 io.files
     io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow namespaces
     parser prettyprint quotations
@@ -14,7 +14,7 @@ USING: accessors arrays assocs calendar colors.constants continuations
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.panes ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
-    ui.gestures ui.pens.solid vectors words
+    ui.gestures ui.pens.gradient ui.pens.solid utilities vectors words
     ;
 FROM: models => change-model ; ! to clear ambiguity
 FROM: namespaces => set ; ! to clear ambiguity
@@ -24,16 +24,6 @@ IN: kullulu
 SYMBOLS: archive-table fsm-subscribers options persistents translations
     ;
 ! ------------------------------------------------- utilities
-: error>message ( error -- string )
-    ! Factor errors are strings in Windows and tuples in Linux
-    [ message>> ] [ drop ] recover
-    ;
-: print-file-error ( path error -- )
-    [ normalize-path ] dip error>message " : " append prepend print flush
-    ;
-: fetch-lines ( path -- lines )
-    [ utf8 file-lines ] [ print-file-error { } ] recover
-    ;
 : line>words ( line -- array )
     " " split [ empty? not ] filter
     ;
@@ -233,14 +223,11 @@ M: manual set-font-size ( size gadget -- size )
 : path>element ( path -- element )
     [ parse-file >array ] [ error>> error>message " : " rot 3array ] recover
     ; inline
-: display ( path pane -- )
+M: manual model-changed ( model manual -- ) ! also called by open-window
+    [ value>> manual-path ] dip
     dup stylesheet>>
     [ [ [ path>element print-element ] with-default-style ] with-pane ]
     with-variables
-    ; inline
-M: manual model-changed ( model manual -- ) ! also called by open-window
-    [ value>> manual-path ] dip
-    [ parent>> get-label swap >>text relayout ] [ display ] 2bi
     ;
 : switch ( manual-gadget filename -- )
     swap model>> set-model
@@ -259,13 +246,17 @@ M: manual handle-gesture ( gesture manual -- ? )
 manual
 H{
     { T{ key-down { sym "ESC" } }   [ close-window ] }
-    { T{ key-down { sym "F1" } }    [ "0.txt" switch ] }
+    { T{ key-down { sym "F1" } }    [ "F1.txt" switch ] }
     { T{ key-down { sym " " } }     [ "editor.txt" switch ] }
     }
 clone set-gestures
 
+: page-theme ( gadget -- )
+    { T{ rgba f 0.8 1.0 1.0 1.0 } T{ rgba f 0.8 0.8 1.0 1.0 } } <gradient>
+    >>interior drop
+    ; inline
 : <manual> ( filename -- gadget )
-    f manual new-pane fsm-subscribe
+    f manual new-pane fsm-subscribe dup page-theme
     swap <model> >>model
     H{
         { default-block-style H{
@@ -282,7 +273,7 @@ clone set-gestures
             } }
         }
     >>stylesheet
-    "" <labeled-gadget> fsm-subscribe
+    "Close Manual : Esc    Help : F1" i18n <labeled-gadget> fsm-subscribe
     set-font-sizes
     ;
 ! ------------------------------------------------- kullulu-renderer

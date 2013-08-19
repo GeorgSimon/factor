@@ -1,4 +1,4 @@
 USING: help.markup ;
 
-{ $heading "Einleitung" }
+{ $heading "Optionen" }
 { $nl }

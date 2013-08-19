@@ -8,29 +8,35 @@ Gefundene Optionen :
 Syntax error :
 Syntax-Fehler :
 
-Item Labeling
-Beschriftung des Eintrags
-
 Manual
 Handbuch
 
 No translation found for following text line :
 Keine Übersetzung gefunden für folgende Textzeile :
 
-Insert : ↩ or ⇧↩
-Einfügen : ↩ oder ⇧↩
-
 Quit : Esc    Manual : F1
 Beenden : Esc    Handbuch : F1
 
-Periodic data saving disabled.
-Das regelmäßige Speichern der Daten ist ausgeschaltet.
+Insert : ↩ or ⇧↩
+Einfügen : ↩ oder ⇧↩
+
+Item Labeling
+Beschriftung des Eintrags
+
+Close Manual : Esc    Help : F1
+Handbuch schließen : Esc    Hinweise : F1
 
 Option not found :
 Option nicht gefunden :
 
+new item line
+neue Eintragszeile
+
 No item selected
 Kein Eintrag ausgewählt
+
+Periodic data saving disabled.
+Das regelmäßige Speichern der Daten ist ausgeschaltet.
 
 Close editor : Esc
 Editor schließen : Esc
