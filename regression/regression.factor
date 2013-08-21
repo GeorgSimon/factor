@@ -58,10 +58,11 @@ TUPLE: external-command command-string error-table
     [ compare-command get prepend-with-space prepend-with-space system ] 2map
     ;
 : set-defaults ( -- )
-    "commands.txt" utf8 file-lines .
-    "diff" compare-command set  ! Windows: fc
-    "cp" compile-command set
-    "less" view-command set
+    "commands.txt" utf8 file-lines
+    [ first compare-command set ]
+    [ second compile-command set ]
+    [ third view-command set ]
+    tri
     "results" results-dir set
     "sources" sources-dir set
     "targets" targets-dir set
