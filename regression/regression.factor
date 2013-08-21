@@ -14,6 +14,8 @@ Test:   cd /opt/pub/mDS/factor096/work/regression/test/
 SYMBOLS: compare-command compile-command view-command
     results-dir sources-dir targets-dir ;
 
+TUPLE: external-command command-string error-table
+    ;
 : quote ( string -- string' )
      "\"" dup rot glue
      ;
