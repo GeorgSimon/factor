@@ -17,7 +17,7 @@ SYMBOLS: compare-command compile-command view-command
 TUPLE: external-command command-string error-table
     ;
 : <external-command> ( command-string error-table -- object )
-    external-command new boa
+    external-command boa
     ;
 : quote ( string -- string' )
      "\"" dup rot glue
