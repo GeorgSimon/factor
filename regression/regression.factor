@@ -1,7 +1,8 @@
 ! Copyright (C) 2013 Your name.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors command-line continuations fry
-    io io.backend io.directories io.files.types io.pathnames
+    io io.backend io.directories io.encodings.utf8
+    io.files io.files.types io.pathnames
     kernel libc math math.parser namespaces nested-comments prettyprint
     regexp sequences system ;
 IN: regression
@@ -57,7 +58,7 @@ TUPLE: external-command command-string error-table
     [ compare-command get prepend-with-space prepend-with-space system ] 2map
     ;
 : set-defaults ( -- )
-    
+    "commands.txt" utf8 file-lines .
     "diff" compare-command set  ! Windows: fc
     "cp" compile-command set
     "less" view-command set
