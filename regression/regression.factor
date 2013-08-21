@@ -16,6 +16,9 @@ SYMBOLS: compare-command compile-command view-command
 
 TUPLE: external-command command-string error-table
     ;
+: <external-command> ( command-string error-table -- object )
+    external-command new boa
+    ;
 : quote ( string -- string' )
      "\"" dup rot glue
      ;
@@ -54,6 +57,7 @@ TUPLE: external-command command-string error-table
     [ compare-command get prepend-with-space prepend-with-space system ] 2map
     ;
 : set-defaults ( -- )
+    
     "diff" compare-command set  ! Windows: fc
     "cp" compile-command set
     "less" view-command set
