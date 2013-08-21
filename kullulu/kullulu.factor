@@ -10,7 +10,7 @@ USING: accessors arrays assocs calendar colors colors.constants continuations
     io.pathnames io.styles
     kernel math math.parser math.rectangles models models.arrow namespaces
     parser prettyprint quotations
-    sequences sets simple-flat-file splitting timers
+    sequences sets simple-flat-file timers
     ui ui.gadgets ui.gadgets.borders ui.gadgets.editors ui.gadgets.glass
     ui.gadgets.labeled ui.gadgets.labels ui.gadgets.line-support
     ui.gadgets.panes ui.gadgets.scrollers ui.gadgets.tables ui.gadgets.tracks
@@ -24,9 +24,6 @@ IN: kullulu
 SYMBOLS: archive-table fsm-subscribers options persistents translations
     ;
 ! ------------------------------------------------- utilities
-: line>words ( line -- array )
-    " " split [ empty? not ] filter
-    ;
 : get-option ( option-name -- option-value )
     options swap word-prop
     ;
@@ -47,6 +44,9 @@ SYMBOLS: archive-table fsm-subscribers options persistents translations
     ;
 : get-label ( labeled-gadget -- label )
     children>> [ border? ] find nip children>> [ label? ] find nip
+    ;
+: init-pref-dim ( gadget -- gadget' )
+    "width" "height" [ get-option ] bi@ 2array >>pref-dim
     ;
 ! ------------------------------------------------- i18n
 : store-translation ( seq hashtable translation index -- seq hashtable' )
@@ -224,8 +224,8 @@ M: manual set-font-size ( size gadget -- size )
     [ parse-file >array ] [ error>> error>message " : " rot 3array ] recover
     ; inline
 M: manual model-changed ( model manual -- ) ! also called by open-window
-    [ value>> manual-path ] dip
-    dup stylesheet>>
+    [ value>> manual-path ] dip dup stylesheet>>
+    over dim>> . flush ! ####
     [ [ [ path>element print-element ] with-default-style ] with-pane ]
     with-variables
     ;
@@ -273,8 +273,9 @@ clone set-gestures
             } }
         }
     >>stylesheet
-    "Close Manual : Esc    Help : F1" i18n <labeled-gadget> fsm-subscribe
-    set-font-sizes
+    <scroller>
+    "Close Manual : Esc    Help : F1" i18n <labeled-gadget>
+    fsm-subscribe init-pref-dim set-font-sizes
     ;
 ! ------------------------------------------------- kullulu-renderer
 SINGLETON: kullulu-renderer
@@ -303,7 +304,7 @@ TUPLE: table-editor < table calls popup editor-gadget
     kullulu-renderer rot call( m r -- t ) fsm-subscribe     ! path table
     <scroller>
     swap normalize-path <labeled-gadget> fsm-subscribe      ! gadget
-    "width" get-option "height" get-option 2array >>pref-dim
+    init-pref-dim
     ;
 : <table-editor> ( -- labeled-gadget )
     [   table-editor new-table

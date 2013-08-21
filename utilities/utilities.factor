@@ -1,5 +1,5 @@
 USING: accessors continuations io io.backend io.encodings.utf8 io.files
-    kernel sequences
+    kernel sequences splitting
     ;
 IN: utilities
 
@@ -12,4 +12,7 @@ IN: utilities
     ;
 : fetch-lines ( path -- lines )
     [ utf8 file-lines ] [ print-file-error { } ] recover
+    ;
+: line>words ( line -- array )
+    " " split [ empty? not ] filter
     ;
