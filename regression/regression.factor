@@ -8,8 +8,8 @@ USING: accessors command-line continuations fry
 IN: regression
 
 (*
-Test:   cd /opt/pub/mDS/factor096/work/regression/test/
-        factor ../regression.factor
+Test:   cd /opt/pub/mDS/factor/work/regression/test/
+        factor-run ../regression.factor
 *)
 
 SYMBOLS: compare-command compile-command view-command
