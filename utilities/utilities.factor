@@ -1,5 +1,6 @@
-USING: accessors arrays assocs continuations
-    io io.backend io.directories io.encodings.utf8 io.files io.pathnames
+USING: accessors arrays assocs
+    calendar.format calendar.format.macros continuations io io.backend
+    io.directories io.encodings.utf8 io.files io.pathnames io.streams.string
     kernel math math.parser models namespaces prettyprint
     sequences splitting ui.gadgets.borders ui.gadgets.labels vectors words
     ;
@@ -7,6 +8,9 @@ FROM: models => change-model ; ! to clear ambiguity
 IN: utilities
 
 SYMBOLS: config-dir options persistents translations
+    ;
+: timestamp>readable ( time -- string )
+    [ { YYYY "-" MM "-" DD " " hh ":" mm } formatted ] with-string-writer
     ;
 : error>message ( error -- string )
     ! Factor errors are strings in Windows and tuples in Linux
